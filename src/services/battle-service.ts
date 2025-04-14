@@ -95,7 +95,7 @@ export class BattleService {
     return { battle_id, error: null };
   }
 
-  private async getBattle(battle_id: string) {
+  private async getActionBattle(battle_id: string) {
     const { data, error } = await this.supabase
       .from("battles")
       .select("state, guest_id, host_id")
@@ -190,7 +190,8 @@ export class BattleService {
     trainer_id: string,
     data: BattleActionPayload,
   ) {
-    const { battle, error: battleError } = await this.getBattle(battle_id);
+    const { battle, error: battleError } =
+      await this.getActionBattle(battle_id);
     if (battleError !== null) return { error: battleError };
     if (!battle.guest_id) return { error: "Guest not found" };
 
