@@ -108,29 +108,58 @@ export class BattleService {
 
   private async getBattleTurn(battle_id: string) {
     const { data, error } = await this.supabase
-      .from("battle_states")
+      .from("battle_turns")
       .select(
         `
-        *,
-        move:brotmon_moves!move_id(
-          *,
-          base:moves!move_id(*)
-        ),
-        brotmon:trainer_brotmons!brotmon_id(
-          *,
-          base:brotmons!brotmon_id(*)
-         )
-        `,
+          id, battle_id, turn, done,
+          host_action:battle_actions!host_action_id(
+            id, action, target_id,
+            trainer:trainers!trainer_id(
+              id, username,
+              brotmons:trainer_brotmons!trainer_id(
+                id, effects, current_hp,
+                base:brotmons!brotmon_id(
+                  id, name, emoji, nature, hp, attack, defense, speed
+                )
+              )
+            ),
+            brotmon:trainer_brotmons!brotmon_id(
+              id, effects, current_hp,
+              base:brotmons!brotmon_id(
+                id, name, emoji, nature, hp, attack, defense, speed
+              )
+            )
+          ),
+          guest_action:battle_actions!guest_action_id(
+            id, action, target_id,
+            trainer:trainers!trainer_id(
+              id, username,
+              brotmons:trainer_brotmons!trainer_id(
+                id, effects, current_hp,
+                base:brotmons!brotmon_id(
+                  id, name, emoji, nature, hp, attack, defense, speed
+                )
+              )
+            ),
+            brotmon:trainer_brotmons!brotmon_id(
+              id, effects, current_hp,
+              base:brotmons!brotmon_id(
+                id, name, emoji, nature, hp, attack, defense, speed
+              )
+            )
+          )
+      `,
       )
-      .eq("battle_id", battle_id);
+      .eq("battle_id", battle_id)
+      .limit(1)
+      .single();
 
-    if (error !== null || data.length !== 2)
-      return {
-        battleState: null,
-        error: error?.message || "More or less battle_states than necessary",
-      };
+    if (error !== null) {
+      console.error(error.message);
+      return { battleTurn: null, error: error.message };
+    }
 
-    return { battleState: data, error: null };
+    return { battleTurn: data, error: null };
   }
 
   private async finishBattle(
