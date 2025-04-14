@@ -98,14 +98,7 @@ export class BattleService {
   private async getBattle(battle_id: string) {
     const { data, error } = await this.supabase
       .from("battles")
-      .select(
-        `
-        *,
-        host:trainers!host_id(*), 
-        guest:trainers!guest_id(*),
-        logs:battle_logs(*)
-        `,
-      )
+      .select("state, guest_id, host_id")
       .eq("id", battle_id)
       .single();
 
