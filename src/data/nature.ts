@@ -1,4 +1,4 @@
-import { Nature } from "@/types/old/brotmon.type";
+import { Nature } from "@/types/brotmon.type";
 
 export const natureStrengths = {
   [Nature.NORMAL]: [],
