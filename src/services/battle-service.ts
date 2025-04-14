@@ -161,11 +161,12 @@ export class BattleService {
       .eq("id", battle_id)
       .select(
         `
-          turn,
           host:trainers!host_id(id, username), 
-          guest:trainers!guest_id(id, username)
+          guest:trainers!guest_id(id, username),
+          turns:battle_turns(id)
         `,
       )
+      .order("turns", { referencedTable: "battle_turns", ascending: false })
       .single();
 
     if (updateError) {
@@ -173,16 +174,17 @@ export class BattleService {
       return { error: updateError.message };
     }
 
+    const turn_id = data.turns[0].id;
     const winner =
       winner_id === data.host.id ? data.host.username : data.guest!.username;
     const loser =
       winner_id === data.host.id ? data.guest!.username : data.host.username;
 
-    const logMessage = `${forfeit ? `${loser} forfeited. ` : ""}${winner} won!`;
+    const message = `${forfeit ? `${loser} forfeited. ` : ""}${winner} won!`;
     const { error: logError } = await this.logMessage(
       battle_id,
-      data.turn,
-      logMessage,
+      turn_id,
+      message,
     );
 
     if (logError !== null) {
