@@ -106,7 +106,34 @@ export class BattleService {
     return { battle: data, error: null };
   }
 
-  public async getBattleState(battle_id: string) {
+  // public async getBattleState(battle_id: string) {
+  //   const { data, error } = await this.supabase
+  //     .from("battle_states")
+  //     .select(
+  //       `
+  //       *,
+  //       move:brotmon_moves!move_id(
+  //         *,
+  //         base:moves!move_id(*)
+  //       ),
+  //       brotmon:trainer_brotmons!brotmon_id(
+  //         *,
+  //         base:brotmons!brotmon_id(*)
+  //        )
+  //       `,
+  //     )
+  //     .eq("battle_id", battle_id);
+
+  //   if (error !== null || data.length !== 2)
+  //     return {
+  //       battleState: null,
+  //       error: error?.message || "More or less battle_states than necessary",
+  //     };
+
+  //   return { battleState: data, error: null };
+  // }
+
+  private async getBattleTurn(battle_id: string) {
     const { data, error } = await this.supabase
       .from("battle_states")
       .select(
