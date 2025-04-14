@@ -1,6 +1,6 @@
 import { httpClient } from "@/lib/http-client";
 import { AxiosError } from "axios";
-import { use, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type ApiResponse<T> = {
   data: T | null;
@@ -11,7 +11,7 @@ type ApiResponse<T> = {
 
 export function useApi<T>(
   url: string,
-  queryParams?: Record<string, string>
+  queryParams?: Record<string, string>,
 ): ApiResponse<T> {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
