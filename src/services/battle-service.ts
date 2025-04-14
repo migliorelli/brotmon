@@ -1,5 +1,8 @@
+import { BattleUtils } from "@/lib/battle-utils";
 import { createClient } from "@/lib/supabase/server";
 import { BattleAction, BattleActionPayload } from "@/types/battle.type";
+import { Nature } from "@/types/brotmon.type";
+import { StatusEffect } from "@/types/move.type";
 import { ApiTrainer } from "@/types/trainer.type";
 
 export class BattleService {
@@ -524,11 +527,11 @@ export class BattleService {
         return { error: null };
 
       case BattleAction.SWITCH:
-        this.handleSwitch();
+        this.handleSwitchAction(trainer_id, data.brotmon_id);
         break;
 
       case BattleAction.MOVE:
-        this.executeTurn();
+        this.handleMoveAction(trainer_id, data.move_id);
         break;
 
       default:
