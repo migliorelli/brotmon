@@ -1,13 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { BattleAction, BattleActionPayload } from "@/types/battle.type";
-import { Tables } from "@/types/database.types";
 import { ApiTrainer } from "@/types/trainer.type";
-
-type BattleWithRelations = Tables<"battles"> & {
-  host: Tables<"trainers">;
-  guest: Tables<"trainers"> | null;
-  logs: Tables<"battle_logs">[];
-};
 
 export class BattleService {
   private static instance: BattleService;
@@ -114,7 +107,7 @@ export class BattleService {
         `,
       )
       .eq("id", battle_id)
-      .single<BattleWithRelations>();
+      .single();
 
     if (error !== null) return { battle: null, error: error.message };
     return { battle: data, error: null };
