@@ -25,10 +25,14 @@ export class BattleService {
     return BattleService.instance;
   }
 
-  private async logMessage(battle_id: string, turn: number, message: string) {
+  private async logMessage(
+    battle_id: string,
+    turn_id: string,
+    message: string,
+  ) {
     const { error } = await this.supabase.from("battle_logs").insert({
       battle_id,
-      turn,
+      turn_id,
       message,
     });
 
