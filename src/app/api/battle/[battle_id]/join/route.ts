@@ -67,7 +67,7 @@ export async function POST(
     }
 
     const response = NextResponse.json({ battle_id }, { status: 200 });
-    response.cookies.set("id", trainer_id, {
+    response.cookies.set("trainer_id", trainer_id, {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60 * 24, // 1 day

@@ -8,7 +8,7 @@ export default async function Page({
   params: Promise<{ battleId: string }>;
 }) {
   const cookieStore = await cookies();
-  const id = cookieStore.get("id")?.value;
+  const id = cookieStore.get("trainer_id")?.value;
   const { battleId } = await params;
 
   if (!id || !battleId) {
