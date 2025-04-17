@@ -28,6 +28,8 @@ Brotmon (B-rotmon) is a turn-based battle game inspired by Pokémon's combat sys
 
 ## 💻 Getting Started
 
+### 🛜 Cloning the repository
+
 1. Clone the repository:
 
 ```bash
@@ -49,6 +51,10 @@ npm run dev
 
 1. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### ⚡ Running Supabase
+
+
+
 ## 📦 Project Structure
 
 ```filetree
@@ -62,6 +68,10 @@ src/
   ├── lib/           # Utilities and configurations
   ├── services/      # API services
   └── types/         # Reusable types
+supabase/
+  ├── migrations/    # Database migrations
+  ├── schemas/       # Tables schemas
+  └── seeds/         # Seed sql files
 ```
 
 ## 🛠️ Development
