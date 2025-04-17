@@ -48,6 +48,13 @@ export async function POST(
       return NextResponse.json({ error: trainerError }, { status: 500 });
     }
 
+    if (!trainer_id) {
+      return NextResponse.json(
+        { error: "Error creating trainer" },
+        { status: 500 },
+      );
+    }
+
     const { error: joinError } = await battleService.joinBattle(
       battle_id,
       trainer_id,

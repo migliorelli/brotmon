@@ -37,6 +37,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: trainerError }, { status: 500 });
     }
 
+    if (!trainer_id) {
+      return NextResponse.json(
+        { error: "Error creating trainer" },
+        { status: 500 },
+      );
+    }
+
     const { battle_id, error: battleError } =
       await battleService.createBattle(trainer_id);
     if (battleError !== null) {
