@@ -1,5 +1,8 @@
 import { BattleService } from "@/services/battle-service";
-import { BattleAction, BattleActionPayload } from "@/types/battle.type";
+import {
+  BattleAction,
+  BattleActionPayload,
+} from "@/types/battle-service.types";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
