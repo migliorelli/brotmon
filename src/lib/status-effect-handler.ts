@@ -26,9 +26,7 @@ export class StatusEffectHandler {
       } as InterruptiveEffectResult;
 
       const removeEffect = () => {
-        brotmon.effects = (brotmon.effects as StatusEffect[]).filter(
-          (e) => e.name !== effect.name,
-        );
+        brotmon.effects = (brotmon.effects as StatusEffect[]).filter((e) => e.name !== effect.name);
       };
 
       if (effect.duration > 0) {
@@ -56,9 +54,7 @@ export class StatusEffectHandler {
       } as InterruptiveEffectResult;
 
       const removeEffect = () => {
-        brotmon.effects = (brotmon.effects as StatusEffect[]).filter(
-          (e) => e.name !== effect.name,
-        );
+        brotmon.effects = (brotmon.effects as StatusEffect[]).filter((e) => e.name !== effect.name);
       };
 
       if (effect.duration > 0) {
@@ -87,14 +83,10 @@ export class StatusEffectHandler {
             2;
 
           const randomModifier =
-            selfDamage !== 1
-              ? (Math.floor(Math.random() * (255 - 217 + 1)) + 217) / 255
-              : 1;
+            selfDamage !== 1 ? (Math.floor(Math.random() * (255 - 217 + 1)) + 217) / 255 : 1;
 
           selfDamage *= randomModifier;
-          brotmon.current_hp = Math.floor(
-            Math.max(0, brotmon.current_hp - selfDamage),
-          );
+          brotmon.current_hp = Math.floor(Math.max(0, brotmon.current_hp - selfDamage));
 
           result.interrupt = true;
           if (Math.random() < 1 / 2) {
@@ -124,9 +116,7 @@ export class StatusEffectHandler {
       } as InterruptiveEffectResult;
 
       const removeEffect = () => {
-        brotmon.effects = (brotmon.effects as StatusEffect[]).filter(
-          (e) => e.name !== effect.name,
-        );
+        brotmon.effects = (brotmon.effects as StatusEffect[]).filter((e) => e.name !== effect.name);
       };
 
       if (effect.duration > 0) {
@@ -161,11 +151,7 @@ export class StatusEffectHandler {
     for (let effect of brotmon.effects as StatusEffect[]) {
       if (effect.type in this.handlers) {
         const handler = this.handlers[effect.type];
-        const {
-          interrupt,
-          message,
-          brotmon: returnBrotmon,
-        } = handler(brotmon, effect);
+        const { interrupt, message, brotmon: returnBrotmon } = handler({ ...brotmon }, effect);
 
         if (interrupt) {
           return {
@@ -186,31 +172,29 @@ export class StatusEffectHandler {
     brotmon: TurnBrotmon,
     effect: StatusEffect,
     moveName: string,
-  ): { message: string | null } {
-    if (!brotmon.effects) {
-      brotmon.effects = [] as StatusEffect[];
-      return { message: null };
+  ) {
+    const resultBrotmon = { ...brotmon };
+    if (!resultBrotmon.effects) {
+      resultBrotmon.effects = [] as StatusEffect[];
+      return { message: null, brotmon: resultBrotmon };
     }
 
     const isBuffOrDebuffType = (type: StatusEffectEnum) =>
       type === StatusEffectEnum.BUFF || type === StatusEffectEnum.DEBUFF;
 
-    const existingEffectIndex = (brotmon.effects as StatusEffect[]).findIndex(
-      (e) =>
-        isBuffOrDebuffType(e.type)
-          ? effect.name === e.name
-          : effect.type === e.type,
+    const existingEffectIndex = (resultBrotmon.effects as StatusEffect[]).findIndex((e) =>
+      isBuffOrDebuffType(e.type) ? effect.name === e.name : effect.type === e.type,
     );
 
     if (existingEffectIndex !== -1) {
-      (brotmon.effects as StatusEffect[])[existingEffectIndex].duration =
-        effect.duration;
+      (resultBrotmon.effects as StatusEffect[])[existingEffectIndex].duration = effect.duration;
     } else {
-      (brotmon.effects as StatusEffect[]).push(effect);
+      (resultBrotmon.effects as StatusEffect[]).push(effect);
     }
 
     return {
-      message: `${brotmon.base.name} was affected by ${effect.type.toLowerCase()} from ${moveName}!`,
+      message: `${resultBrotmon.base.name} was affected by ${effect.type.toLowerCase()} from ${moveName}!`,
+      brotmon: resultBrotmon,
     };
   }
 }

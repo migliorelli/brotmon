@@ -1,4 +1,5 @@
 import { BattleUtils } from "@/lib/battle-utils";
+import { StatusEffectHandler } from "@/lib/status-effect-handler";
 import { createClient } from "@/lib/supabase/server";
 import {
   BattleAction,
@@ -26,32 +27,35 @@ export class BattleService {
     return BattleService.instance;
   }
 
-  private async logMessage(
-    battle_id: string,
-    turn_id: string,
-    message: string,
-  ) {
-    if (!battle_id || !turn_id || !message) {
-      return { error: "Missing required parameters for logMessage" };
+  private async logMessages(battle_id: string, turn_id: string, messages: string[]) {
+    if (!battle_id || !turn_id || !messages || messages.length === 0) {
+      return { error: "Missing required parameters for logMessages" };
     }
 
     try {
-      const { error } = await this.supabase.from("battle_logs").insert({
+      // batch insert all logs at once
+      const logs = messages.map((message) => ({
         battle_id,
         turn_id,
         message,
-      });
+      }));
+
+      const { error } = await this.supabase.from("battle_logs").insert(logs);
 
       if (error) {
-        console.error("Error logging message:", error.message);
+        console.error("Error logging messages:", error.message);
         return { error: error.message };
       }
 
       return { error: null };
     } catch (err: any) {
-      console.error("Exception in logMessage:", err);
+      console.error("Exception in logMessages:", err);
       return { error: err.message };
     }
+  }
+
+  private async logMessage(battle_id: string, turn_id: string, message: string) {
+    return this.logMessages(battle_id, turn_id, [message]);
   }
 
   public async createTrainer(trainer: ApiTrainer) {
@@ -60,14 +64,11 @@ export class BattleService {
     }
 
     try {
-      const { data: trainer_id, error } = await this.supabase.rpc(
-        "create_trainer",
-        {
-          p_emoji: trainer.emoji,
-          p_username: trainer.username,
-          p_brotmons_json: JSON.stringify(trainer.brotmons),
-        },
-      );
+      const { data: trainer_id, error } = await this.supabase.rpc("create_trainer", {
+        p_emoji: trainer.emoji,
+        p_username: trainer.username,
+        p_brotmons_ids: trainer.brotmons,
+      });
 
       if (error) {
         console.error("Error creating trainer:", error.message);
@@ -87,12 +88,9 @@ export class BattleService {
     }
 
     try {
-      const { data: battleId, error } = await this.supabase.rpc(
-        "create_battle",
-        {
-          p_host_id: trainer_id,
-        },
-      );
+      const { data: battleId, error } = await this.supabase.rpc("create_battle", {
+        p_host_id: trainer_id,
+      });
 
       if (error) {
         console.error("Error creating battle:", error.message);
@@ -241,11 +239,7 @@ export class BattleService {
     }
   }
 
-  private async finishBattle(
-    battle_id: string,
-    winner_id: string,
-    forfeit = false,
-  ) {
+  private async finishBattle(battle_id: string, winner_id: string, forfeit = false) {
     if (!battle_id || !winner_id) {
       return { error: "Battle ID and Winner ID are required" };
     }
@@ -278,17 +272,11 @@ export class BattleService {
       }
 
       const turn_id = data.turns[0].id;
-      const winner =
-        winner_id === data.host.id ? data.host.username : data.guest!.username;
-      const loser =
-        winner_id === data.host.id ? data.guest!.username : data.host.username;
+      const winner = winner_id === data.host.id ? data.host.username : data.guest!.username;
+      const loser = winner_id === data.host.id ? data.guest!.username : data.host.username;
 
       const message = `${forfeit ? `${loser} forfeited. ` : ""}${winner} won!`;
-      const { error: logError } = await this.logMessage(
-        battle_id,
-        turn_id,
-        message,
-      );
+      const { error: logError } = await this.logMessage(battle_id, turn_id, message);
 
       if (logError !== null) {
         console.error("Error logging finish message:", logError);
@@ -366,27 +354,23 @@ export class BattleService {
     }
 
     try {
-      const { data: trainerBrotmons, error: brotmonsError } =
-        await this.supabase
-          .from("trainer_brotmons")
-          .select(
-            `
+      const { data: trainerBrotmons, error: brotmonsError } = await this.supabase
+        .from("trainer_brotmons")
+        .select(
+          `
             id, effects, current_hp,
             base:brotmons!brotmon_id(
               id, name, emoji, nature, hp, attack, defense, speed
           )`,
-          )
-          .eq("trainer_id", trainer_id)
-          .neq("id", brotmon_id)
-          .gt("current_hp", 0)
-          .order("created_at", { ascending: true })
-          .limit(1);
+        )
+        .eq("trainer_id", trainer_id)
+        .neq("id", brotmon_id)
+        .gt("current_hp", 0)
+        .order("created_at", { ascending: true })
+        .limit(1);
 
       if (brotmonsError) {
-        console.error(
-          "Error fetching brotmons for switch:",
-          brotmonsError.message,
-        );
+        console.error("Error fetching brotmons for switch:", brotmonsError.message);
         return { brotmon: null, error: brotmonsError.message };
       } else if (!trainerBrotmons || trainerBrotmons.length === 0) {
         return { brotmon: null, error: "No Brotmon alive" };
@@ -493,12 +477,12 @@ export class BattleService {
   private async executeTurn(battleTurn: BattleTurn) {
     if (
       !battleTurn ||
-      battleTurn.host_action === null ||
-      battleTurn.guest_action === null ||
-      battleTurn.host_action.action === null ||
-      battleTurn.host_action.target_id === null ||
-      battleTurn.guest_action.action === null ||
-      battleTurn.guest_action.target_id === null
+      !battleTurn.host_action ||
+      !battleTurn.guest_action ||
+      !battleTurn.host_action.action ||
+      !battleTurn.host_action.target_id ||
+      !battleTurn.guest_action.action ||
+      !battleTurn.guest_action.target_id
     ) {
       return {
         result: null,
@@ -509,38 +493,48 @@ export class BattleService {
     // store logs and send after all actions
     const logs: string[] = [];
 
-    // copy to avoid direct mutation
+    // deep copy to avoid direct mutation
     const actions = [
-      { ...battleTurn.host_action },
-      { ...battleTurn.guest_action },
+      { ...battleTurn.host_action, brotmon: { ...battleTurn.host_action.brotmon } },
+      { ...battleTurn.guest_action, brotmon: { ...battleTurn.guest_action.brotmon } },
     ];
 
-    const hostSpeed = actions[0].brotmon.base.speed;
-    const guestSpeed = actions[1].brotmon.base.speed;
+    // get base speeds and apply multipliers
+    const hostBaseSpeed = actions[0].brotmon.base.speed;
+    const guestBaseSpeed = actions[1].brotmon.base.speed;
 
-    // get host speed multipliers (hsm)
-    const hsm = BattleUtils.getStatusMultiplier(
+    // get host and guest speed multipliers
+    const hostSpeedMultiplier = BattleUtils.getStatusMultiplier(
       "speed",
       actions[0].brotmon.effects as StatusEffect[],
     );
-
-    // get guest speed multipliers (gsm)
-    const gsm = BattleUtils.getStatusMultiplier(
+    const guestSpeedMultiplier = BattleUtils.getStatusMultiplier(
       "speed",
       actions[1].brotmon.effects as StatusEffect[],
     );
 
-    // if hostSpeed < guestSpeed then Number(boolean) will be 1, the guest index
-    const first = Number(hostSpeed * hsm < guestSpeed * gsm);
+    // calculate effective speeds
+    const hostEffectiveSpeed = hostBaseSpeed * hostSpeedMultiplier;
+    const guestEffectiveSpeed = guestBaseSpeed * guestSpeedMultiplier;
+
+    // determine who goes first (higher speed goes first)
+    // if speeds are equal, use a random tiebreaker
+    let first = 0; // host by default
+    if (hostEffectiveSpeed < guestEffectiveSpeed) {
+      first = 1; // guest goes first
+    } else if (hostEffectiveSpeed === guestEffectiveSpeed) {
+      // random tiebreaker for equal speeds
+      first = Math.random() < 0.5 ? 0 : 1;
+    }
 
     const willSwitch = actions.map((a) => a.action === "SWITCH");
 
-    // Handle switches first
+    // handle switches first
     for (let i = 0; i < 2; i++) {
-      const ws = willSwitch[i];
-      if (!ws) continue;
+      if (!willSwitch[i]) continue;
+
       const action = actions[i];
-      const action2 = actions[1 - i]; // [0,1] === [0,-1]
+      const opponent = actions[1 - i]; // [0,1] or [1,0]
 
       const { brotmon, error: switchError } = await this.handleSwitch(
         action.trainer.id,
@@ -551,7 +545,7 @@ export class BattleService {
         return {
           result: {
             finished: true,
-            winner_id: action2.trainer.id,
+            winner_id: opponent.trainer.id,
             logs,
           },
           error: null,
@@ -566,172 +560,241 @@ export class BattleService {
       }
 
       logs.push(`${action.trainer.username} switched to ${brotmon.base.name}!`);
-      actions[i].brotmon = brotmon;
+      actions[i].brotmon = { ...brotmon }; // use a copy to avoid reference issues
     }
 
-    // process attacks in order of speed
-    for (let i = 0; i < 2; i++) {
-      const attackerIndex = (first + i) % 2; // always return 0 | 1, starting with first
-      const attacker = actions[attackerIndex];
+    // sort moves by priority first, then by speed
+    const moveActions = actions
+      .map((action, index) => {
+        if (action.action !== "MOVE") {
+          return null;
+        }
+        return { action, index };
+      })
+      .filter((item) => item !== null) as { action: (typeof actions)[0]; index: number }[];
 
-      if (attacker.action === "SWITCH") continue;
+    // if we have no moves to process, skip this part
+    if (moveActions.length > 0) {
+      // array to keep track of move priorities (will be populated later)
+      const priorities: number[] = new Array(moveActions.length).fill(0);
 
-      const attackerBrotmon = { ...attacker.brotmon };
+      // look up move priorities
+      for (let i = 0; i < moveActions.length; i++) {
+        const { action } = moveActions[i];
 
-      const { brotmon: ieBrotmon, interrupt } =
-        BattleUtils.handleInterruptiveEffects(attackerBrotmon as TurnBrotmon);
-      actions[attackerIndex].brotmon = ieBrotmon;
+        // get move details to determine priority
+        const { move } = await this.getMove(action.brotmon.id, action.target_id!);
+        if (move?.base.priority) {
+          priorities[i] = move.base.priority;
+        }
+      }
 
-      if (interrupt) {
-        if (interrupt.message) {
-          logs.push(interrupt.message);
+      // sort by priority (higher first), then by speed (higher first), then by original order as tiebreaker
+      moveActions.sort((a, b) => {
+        const priorityDiff =
+          priorities[moveActions.indexOf(b)] - priorities[moveActions.indexOf(a)];
+        if (priorityDiff !== 0) return priorityDiff;
+
+        const speedA =
+          actions[a.index].brotmon.base.speed *
+          BattleUtils.getStatusMultiplier(
+            "speed",
+            actions[a.index].brotmon.effects as StatusEffect[],
+          );
+
+        const speedB =
+          actions[b.index].brotmon.base.speed *
+          BattleUtils.getStatusMultiplier(
+            "speed",
+            actions[b.index].brotmon.effects as StatusEffect[],
+          );
+
+        if (speedA !== speedB) return speedB - speedA;
+
+        // if still tied, use the first/second order
+        return a.index - b.index;
+      });
+
+      // process moves in priority+speed order
+      for (const { action, index } of moveActions) {
+        const attackerBrotmon = { ...action.brotmon };
+
+        // handle interruptions (brainrot, paralysis and sleep)
+        const { brotmon: updatedBrotmon, interrupt } =
+          StatusEffectHandler.processInterruptiveEffects(attackerBrotmon as TurnBrotmon);
+
+        // update brotmon after effects
+        actions[index].brotmon = updatedBrotmon;
+
+        if (interrupt) {
+          if (interrupt.message) {
+            logs.push(interrupt.message);
+          }
+          continue;
         }
 
-        continue;
-      }
+        // get move details
+        const { move, error: moveError } = await this.getMove(
+          attackerBrotmon.id,
+          action.target_id!,
+        );
 
-      const { move, error: moveError } = await this.getMove(
-        attackerBrotmon.id,
-        attacker.target_id!,
-      );
-
-      if (moveError === "Usage limit reached") {
-        logs.push(`${attackerBrotmon.base.name} can't use this move anymore!`);
-        continue;
-      } else if (moveError) {
-        return { result: null, error: moveError };
-      } else if (!move) {
-        return {
-          result: null,
-          error: `Move with ID ${attacker.target_id!} not found.`,
-        };
-      }
-
-      // update move usage count
-      try {
-        const { error: updateMoveError } = await this.supabase
-          .from("brotmon_moves")
-          .update({
-            current_uses: move.current_uses - 1,
-          })
-          .eq("id", move.id);
-
-        if (updateMoveError) {
-          console.error("Error updating move usage:", updateMoveError.message);
+        if (moveError === "Usage limit reached") {
+          logs.push(`${attackerBrotmon.base.name} can't use this move anymore!`);
+          continue;
+        } else if (moveError) {
+          return { result: null, error: moveError };
+        } else if (!move) {
+          return {
+            result: null,
+            error: `Move with ID ${action.target_id!} not found.`,
+          };
         }
-      } catch (err: any) {
-        console.error("Exception updating move usage:", err);
-      }
 
-      // check for accuracy
-      if (move.base.accuracy < Math.random()) {
-        logs.push(`${attackerBrotmon.base.name} missed ${move.base.name}!`);
-        continue;
-      }
+        // update move usage count (won't go below 0)
+        try {
+          const newUses = Math.max(0, move.current_uses - 1);
+          const { error: updateMoveError } = await this.supabase
+            .from("brotmon_moves")
+            .update({
+              current_uses: newUses,
+            })
+            .eq("id", move.id);
 
-      const target = actions[1 - attackerIndex]; // [0,1] === [0,-1]
-      const targetBrotmon = { ...target.brotmon };
-
-      if (move.base.type === "ATTACK") {
-        const attackerMultiplier = BattleUtils.getStatusMultiplier(
-          "attack",
-          attackerBrotmon.effects as StatusEffect[],
-        );
-
-        const defenseMultiplier = BattleUtils.getStatusMultiplier(
-          "defense",
-          targetBrotmon.effects as StatusEffect[],
-        );
-
-        const damage = BattleUtils.calculateDamage(
-          move.base.power,
-          attackerBrotmon.base.attack * attackerMultiplier,
-          targetBrotmon.base.defense * defenseMultiplier,
-          attackerBrotmon.base.nature.includes(move.base.nature as Nature),
-          move.base.nature as Nature,
-          targetBrotmon.base.nature as Nature[],
-        );
-
-        targetBrotmon.current_hp = Math.floor(
-          Math.max(0, targetBrotmon.current_hp - damage),
-        );
-
-        // Update target brotmon in actions array
-        actions[1 - attackerIndex].brotmon = targetBrotmon;
-
-        logs.push(
-          `${attackerBrotmon.base.name} used ${move.base.name} on ${targetBrotmon.base.name} and dealt ${damage} damage!`,
-        );
-      } else if (move.base.type === "STATUS") {
-        logs.push(
-          `${attackerBrotmon.base.name} used ${move.base.name} on ${targetBrotmon.base.name}!`,
-        );
-      }
-
-      // apply or extend effect if it hits and passes chance check
-      if (
-        move.base.effect &&
-        (move.base.effect as StatusEffect).chance >= Math.random()
-      ) {
-        const effect = move.base.effect as StatusEffect;
-        const result = BattleUtils.applyStatusEffect(
-          targetBrotmon as TurnBrotmon,
-          effect,
-          move.base.name,
-        );
-        if (result.message) {
-          logs.push(result.message);
+          if (updateMoveError) {
+            console.error("Error updating move usage:", updateMoveError.message);
+          }
+        } catch (err: any) {
+          console.error("Exception updating move usage:", err);
         }
-        // update target brotmon in actions array with applied effect
-        actions[1 - attackerIndex].brotmon = targetBrotmon;
+
+        // check for accuracy
+        const accuracyRoll = Math.random();
+        if (move.base.accuracy < accuracyRoll) {
+          logs.push(`${attackerBrotmon.base.name} tried ${move.base.name} but missed!`);
+          continue;
+        }
+
+        // find target (opponent)
+        const targetIndex = 1 - index; // if index is 0, target is 1; if index is 1, target is 0
+        const targetAction = actions[targetIndex];
+        const targetBrotmon = { ...targetAction.brotmon };
+
+        // process different move types
+        if (move.base.type === "ATTACK") {
+          // get attack and defense modifiers from status effects
+          const attackMultiplier = BattleUtils.getStatusMultiplier(
+            "attack",
+            attackerBrotmon.effects as StatusEffect[],
+          );
+
+          const defenseMultiplier = BattleUtils.getStatusMultiplier(
+            "defense",
+            targetBrotmon.effects as StatusEffect[],
+          );
+
+          // calculate damage considering STAB (Same Type Attack Bonus) and type effectiveness
+          const [damage, isCritical] = BattleUtils.calculateDamage(
+            move.base.power,
+            attackerBrotmon.base.attack * attackMultiplier,
+            targetBrotmon.base.defense * defenseMultiplier,
+            attackerBrotmon.base.nature.includes(move.base.nature as Nature), // STAB bonus
+            move.base.nature as Nature,
+            targetBrotmon.base.nature as Nature[],
+            move.base.always_crit,
+          );
+
+          // update target HP (not below 0)
+          targetBrotmon.current_hp = Math.max(0, targetBrotmon.current_hp - damage);
+
+          // update target in actions array
+          actions[targetIndex].brotmon = targetBrotmon;
+
+          // log the attack result
+          let damageMessage = `${attackerBrotmon.base.name} used ${move.base.name} on ${targetBrotmon.base.name} and dealt ${damage} damage!`;
+          if (isCritical) damageMessage += " Critical hit!";
+          logs.push(damageMessage);
+        } else if (move.base.type === "STATUS") {
+          logs.push(
+            `${attackerBrotmon.base.name} used ${move.base.name} on ${targetBrotmon.base.name}!`,
+          );
+        }
+
+        // Apply status effects if the move has them and passes chance check
+        if (move.base.effect) {
+          const effect = move.base.effect as StatusEffect;
+          const chanceRoll = Math.random();
+
+          if (effect.chance >= chanceRoll) {
+            const result = StatusEffectHandler.applyStatusEffect(
+              targetBrotmon as TurnBrotmon,
+              effect,
+              move.base.name,
+            );
+
+            // update target with applied effect
+            actions[targetIndex].brotmon = result.brotmon || targetBrotmon;
+
+            // add status effect message to logs if exists
+            if (result.message) {
+              logs.push(result.message);
+            }
+          }
+        }
       }
     }
 
-    // Check for fainted brotmons
+    // check for fainted brotmons after all actions
     for (let i = 0; i < 2; i++) {
       const action = actions[i];
 
-      if (action.brotmon.current_hp === 0) {
+      // if Brotmon died
+      if (action.brotmon.current_hp <= 0) {
         logs.push(`${action.brotmon.base.name} fainted!`);
-        const { error: asbError } = await this.autoSwitchBrotmon(
-          action.trainer.id,
-        );
 
-        if (asbError === "No Brotmon alive") {
+        // try to auto-switch to another Brotmon
+        const { error: switchError } = await this.autoSwitchBrotmon(action.trainer.id);
+
+        if (switchError === "No Brotmon alive") {
+          // End battle if no more Brotmons are available
           return {
             result: {
               finished: true,
-              winner_id: actions[1 - i].trainer.id, // [0,1] === [0,-1],
+              winner_id: actions[1 - i].trainer.id,
               logs,
             },
             error: null,
           };
-        } else if (asbError) {
-          return { result: null, error: asbError };
+        } else if (switchError) {
+          return { result: null, error: switchError };
         }
       }
     }
 
-    return { result: { actions, logs }, error: null };
+    return {
+      result: {
+        actions,
+        logs,
+        finished: false,
+      },
+      error: null,
+    };
   }
 
-  public async performAction(
-    battle_id: string,
-    trainer_id: string,
-    data: BattleActionPayload,
-  ) {
+  public async performAction(battle_id: string, trainer_id: string, data: BattleActionPayload) {
     if (!battle_id || !trainer_id || !data) {
       return { error: "Missing required parameters" };
     }
 
     try {
-      const { battle, error: battleError } =
-        await this.getActionBattle(battle_id);
+      const { battle, error: battleError } = await this.getActionBattle(battle_id);
       if (battleError !== null) return { error: battleError };
-      if (!battle || !battle.guest_id) return { error: "Guest not found" };
+      if (!battle) return { error: "Battle not found" };
+      if (!battle.guest_id) return { error: "Guest not found" };
 
+      // handle START action for host
       if (
-        BattleAction.START === data.action &&
+        data.action === BattleAction.START &&
         battle.state === "READY" &&
         trainer_id === battle.host_id
       ) {
@@ -740,50 +803,37 @@ export class BattleService {
         return { error: null };
       }
 
+      // verify if battle is in progress
       if (battle.state !== "BATTLEING")
         return { error: "Battle has not yet started or has already finished" };
 
-      switch (data.action) {
-        case BattleAction.FORFEIT:
-          const winner_id =
-            trainer_id === battle.host_id ? battle.guest_id : battle.host_id;
-          const { error: finishError } = await this.finishBattle(
-            battle_id,
-            winner_id,
-            true,
-          );
-
-          if (finishError !== null) return { error: finishError };
-          return { error: null };
-
-        case BattleAction.SWITCH:
-          if (!data.brotmon_id) {
-            return { error: "Brotmon ID is required for SWITCH action" };
-          }
-          const { error: switchError } = await this.handleSwitchAction(
-            trainer_id,
-            data.brotmon_id,
-          );
-          if (switchError) return { error: switchError };
-          break;
-
-        case BattleAction.MOVE:
-          if (!data.move_id) {
-            return { error: "Move ID is required for MOVE action" };
-          }
-          const { error: moveError } = await this.handleMoveAction(
-            trainer_id,
-            data.move_id,
-          );
-          if (moveError) return { error: moveError };
-          break;
-
-        default:
-          return { error: "Invalid action" };
+      // verify if the trainer is part of this battle
+      if (trainer_id !== battle.host_id && trainer_id !== battle.guest_id) {
+        return { error: "Trainer is not part of this battle" };
       }
 
-      const { battleTurn, error: battleTurnError } =
-        await this.getBattleTurn(battle_id);
+      if (data.action === BattleAction.FORFEIT) {
+        const winner_id = trainer_id === battle.host_id ? battle.guest_id : battle.host_id;
+        const { error: finishError } = await this.finishBattle(battle_id, winner_id, true);
+        if (finishError) return { error: finishError };
+        return { error: null };
+      } else if (data.action === BattleAction.SWITCH) {
+        if (!data.brotmon_id) {
+          return { error: "Brotmon ID is required for SWITCH action" };
+        }
+        const { error: switchError } = await this.handleSwitchAction(trainer_id, data.brotmon_id);
+        if (switchError) return { error: switchError };
+      } else if (data.action === BattleAction.MOVE) {
+        if (!data.move_id) {
+          return { error: "Move ID is required for MOVE action" };
+        }
+        const { error: moveError } = await this.handleMoveAction(trainer_id, data.move_id);
+        if (moveError) return { error: moveError };
+      } else {
+        return { error: "Invalid action" };
+      }
+
+      const { battleTurn, error: battleTurnError } = await this.getBattleTurn(battle_id);
       if (battleTurnError !== null) return { error: battleTurnError };
       if (!battleTurn) return { error: "Battle turn not found" };
 
@@ -797,44 +847,47 @@ export class BattleService {
         return { error: null }; // return success but don't execute turn yet
       }
 
-      const { result, error: executeError } =
-        await this.executeTurn(battleTurn);
+      const { result, error: executeError } = await this.executeTurn(battleTurn);
 
       if (executeError) {
         return { error: executeError };
-      } else if (!result) {
-        return { error: `Turn ${battleTurn.id} is not ready yet` };
+      }
+
+      if (!result) {
+        return { error: `Turn ${battleTurn.id} execution failed` };
       }
 
       // log battle messages
-      for (let log of result.logs) {
-        const { error: logError } = await this.logMessage(
-          battle_id,
-          battleTurn.id,
-          log,
-        );
-
+      if (result.logs.length > 0) {
+        const { error: logError } = await this.logMessages(battle_id, battleTurn.id, result.logs);
         if (logError) {
-          console.error("Error logging message:", logError);
+          console.error("Error logging messages:", logError);
           return { error: logError };
         }
       }
 
-      if (result.finished) {
+      if (result.finished && result.winner_id) {
         const { error } = await this.finishBattle(battle_id, result.winner_id);
         if (error) {
           return { error };
         }
-      } else if (result.actions) {
-        // update brotmon states after the turn execution
-        for (const action of result.actions) {
+      }
+
+      if (result.actions) {
+        const updates = result.actions.map((action) => ({
+          id: action.brotmon.id,
+          current_hp: action.brotmon.current_hp,
+          effects: action.brotmon.effects,
+        }));
+
+        for (const update of updates) {
           const { error: updateError } = await this.supabase
             .from("trainer_brotmons")
             .update({
-              current_hp: action.brotmon.current_hp,
-              effects: action.brotmon.effects,
+              current_hp: update.current_hp,
+              effects: update.effects,
             })
-            .eq("id", action.brotmon.id);
+            .eq("id", update.id);
 
           if (updateError) {
             console.error("Error updating brotmon state:", updateError.message);
@@ -853,12 +906,9 @@ export class BattleService {
           return { error: turnError.message };
         }
 
-        const { error: newTurnError } = await this.supabase.rpc(
-          "create_battle_turn",
-          {
-            p_battle_id: battle_id,
-          },
-        );
+        const { error: newTurnError } = await this.supabase.rpc("create_battle_turn", {
+          p_battle_id: battle_id,
+        });
 
         if (newTurnError) {
           console.error("Error creating new turn:", newTurnError.message);
