@@ -1,53 +1,11 @@
--- associate moves to a specific brotmon
-CREATE FUNCTION associate_moves_to_brotmon(p_brotmon_name text, p_move_names text[])
-RETURNS void
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_brotmon_id uuid;
-    v_move_id uuid;
-    v_move_name text;
-BEGIN
-    -- get the brotmon id
-    SELECT id INTO v_brotmon_id FROM brotmons WHERE name = p_brotmon_name;
-    
-    IF v_brotmon_id IS NULL THEN
-        RAISE EXCEPTION 'Brotmon % not found', p_brotmon_name;
-    END IF;
-    
-    -- associate each move
-    FOREACH v_move_name IN ARRAY p_move_names LOOP
-        -- get the move ID
-        SELECT id INTO v_move_id FROM moves WHERE name = v_move_name;
-        
-        IF v_move_id IS NULL THEN
-            RAISE WARNING 'Move % not found for brotmon %', v_move_name, p_brotmon_name;
-            CONTINUE;
-        END IF;
-        
-        -- insert the association if it doesn't exist
-        INSERT INTO brotmon_owned_moves (brotmon_id, move_id)
-        VALUES (v_brotmon_id, v_move_id)
-        ON CONFLICT (brotmon_id, move_id) DO NOTHING;
-    END LOOP;
+drop function if exists "public"."create_action"(p_battle_id uuid, p_trainer_id uuid, p_brotmon_id uuid, p_target_id uuid, p_action text);
 
-EXCEPTION 
-    WHEN OTHERS THEN 
-        RAISE EXCEPTION 'Error associating move % with brotmon % : % (SQLSTATE: %)', v_move_name, p_brotmon_name, sqlerrm, sqlstate;
-END;
-$$;
+set check_function_bodies = off;
 
--- create an action in a battle
-CREATE OR REPLACE FUNCTION create_action(
-    p_battle_id uuid,
-    p_trainer_id uuid,
-    p_brotmon_id uuid,
-    p_target_id uuid DEFAULT NULL,
-    p_action action_type DEFAULT NULL
-)
-RETURNS uuid
-LANGUAGE plpgsql
-AS $$
+CREATE OR REPLACE FUNCTION public.create_action(p_battle_id uuid, p_trainer_id uuid, p_brotmon_id uuid, p_target_id uuid DEFAULT NULL::uuid, p_action action_type DEFAULT NULL::action_type)
+ RETURNS uuid
+ LANGUAGE plpgsql
+AS $function$
 DECLARE 
     v_battle_action_id uuid;
 BEGIN
@@ -73,13 +31,13 @@ EXCEPTION
     WHEN OTHERS THEN 
         RAISE EXCEPTION 'Error creating battle action: % (SQLSTATE: %)', SQLERRM, SQLSTATE;
 END;
-$$;
+$function$
+;
 
--- create a new battle
-CREATE FUNCTION create_battle(p_host_id uuid)
-RETURNS uuid
-LANGUAGE plpgsql
-AS $$
+CREATE OR REPLACE FUNCTION public.create_battle(p_host_id uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+AS $function$
 DECLARE 
     v_battle_action_id uuid;
     v_battle_id uuid;
@@ -127,13 +85,13 @@ EXCEPTION
     WHEN OTHERS THEN 
         RAISE EXCEPTION 'Error creating battle: % (SQLSTATE: %)', sqlerrm, sqlstate;
 END;
-$$;
+$function$
+;
 
--- create a new battle turn
-CREATE FUNCTION create_battle_turn(p_battle_id uuid)
-RETURNS void
-LANGUAGE plpgsql
-AS $$
+CREATE OR REPLACE FUNCTION public.create_battle_turn(p_battle_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+AS $function$
 DECLARE 
     v_host_action_id uuid;
     v_guest_action_id uuid;
@@ -159,55 +117,13 @@ EXCEPTION
     WHEN OTHERS THEN 
         RAISE EXCEPTION 'Error creating battle turn: % (SQLSTATE: %)', sqlerrm, sqlstate;
 END;
-$$;
+$function$
+;
 
--- create a new trainer
-CREATE FUNCTION create_trainer(p_username text, p_emoji text, p_brotmons_ids uuid[])
-RETURNS uuid
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  v_trainer_id uuid;
-BEGIN
-  -- insert trainer
-  INSERT INTO trainers (emoji, username)
-  VALUES (p_emoji, p_username)
-  RETURNING id INTO v_trainer_id;
-
-  -- insert brotmons if exists
-  IF p_brotmons_ids IS NOT NULL AND array_length(p_brotmons_ids, 1) BETWEEN 1 AND 3 THEN
-    INSERT INTO trainer_brotmons (trainer_id, brotmon_id)
-    SELECT v_trainer_id, UNNEST(p_brotmons_ids);
-  END IF;
-
-  RETURN v_trainer_id;
-
-EXCEPTION
-  WHEN OTHERS THEN
-    RAISE EXCEPTION 'Error creating trainer: %', SQLERRM;
-END;
-$$;
-
-
--- trigger function to set the current HP of a trainer's brotmon
-CREATE FUNCTION insert_trainer_brotmon()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    SELECT hp INTO NEW.current_hp
-    FROM brotmons
-    WHERE id = NEW.brotmon_id;
-
-    RETURN NEW;
-END;
-$$;
-
--- join a battle as a guest
-CREATE FUNCTION join_battle(p_guest_id uuid, p_battle_id uuid)
-RETURNS void
-LANGUAGE plpgsql
-AS $$
+CREATE OR REPLACE FUNCTION public.join_battle(p_guest_id uuid, p_battle_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+AS $function$
 DECLARE 
     v_brotmon_id uuid;
     v_turn_id uuid;
@@ -265,13 +181,13 @@ EXCEPTION
     WHEN OTHERS THEN 
         RAISE EXCEPTION 'Error joining battle: % (SQLSTATE: %)', sqlerrm, sqlstate;
 END;
-$$;
+$function$
+;
 
--- start a battle
-CREATE FUNCTION start_battle(p_battle_id uuid)
-RETURNS void
-LANGUAGE plpgsql
-AS $$
+CREATE OR REPLACE FUNCTION public.start_battle(p_battle_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+AS $function$
 DECLARE 
     v_host_action_id uuid;
     v_guest_action_id uuid;
@@ -305,4 +221,7 @@ EXCEPTION
     WHEN OTHERS THEN 
         RAISE EXCEPTION 'Error starting battle: % (SQLSTATE: %)', sqlerrm, sqlstate;
 END;
-$$;
+$function$
+;
+
+
