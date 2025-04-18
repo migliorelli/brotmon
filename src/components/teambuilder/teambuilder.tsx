@@ -1,5 +1,6 @@
 "use client";
 
+import { usePersistentState } from "@/hooks/use-persistent-state";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -32,14 +33,26 @@ export function Teambuilder({
   onSubmit,
   submitButtonText = "Create Battle",
 }: TeambuilderProps) {
-  const [emoji, setEmoji] = useState<string>("🧠");
-  const [name, setName] = useState("");
+  const [emoji, setEmoji] = usePersistentState<string>(
+    "teambuilder_emoji",
+    "🧠",
+  );
+
+  const [username, setUsername] = usePersistentState(
+    "teambuilder_username",
+    "",
+  );
+
+  const [brotmons, setBrotmons] = usePersistentState<string[]>(
+    "teambuilder_brotmons",
+    [],
+  );
+
   const [error, setError] = useState<string | null>(null);
-  const [brotmons, setBrotmons] = useState<string[]>([]);
 
   const handleSubmit = () => {
     const data = {
-      name,
+      name: username,
       emoji,
       brotmons,
     };
@@ -55,7 +68,7 @@ export function Teambuilder({
   };
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full px-4">
       <div className="mx-auto flex w-full max-w-sm flex-col space-y-2">
         <div>
           <h4 className="text-xl leading-none font-medium">
@@ -68,10 +81,10 @@ export function Teambuilder({
         <div className="flex w-full items-center gap-2">
           <EmojiPicker value={emoji} onChange={(e) => setEmoji(e)} />
           <Input
-            value={name}
+            value={username}
             className="text-md h-10"
             placeholder="Username"
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => setUsername(e.target.value)}
           />
         </div>
         <Button onClick={handleSubmit}>{submitButtonText}</Button>

@@ -6,7 +6,7 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useDraggable,
   useDroppable,
@@ -19,6 +19,7 @@ import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { Card } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
+import { Spinner } from "../ui/spinner";
 
 type BrotmonItem = {
   name: string;
@@ -43,19 +44,20 @@ function SlotBrotmonCard({
   });
 
   return (
-    <Card
-      ref={setNodeRef}
-      onClick={remove}
-      className={clsx(
-        "active:border-destructive/50 active:bg-destructive/10 grid h-full cursor-pointer items-center select-none",
-        isOver && "bg-secondary",
-      )}
-    >
-      <div className="flex items-center gap-2">
-        <span>{brotmon.emoji}</span>
-        <span>{brotmon.name}</span>
-      </div>
-    </Card>
+    <div onClick={remove} className="h-full">
+      <Card
+        ref={setNodeRef}
+        className={clsx(
+          "active:border-destructive/50 active:bg-destructive/10 grid h-full cursor-pointer items-center select-none",
+          isOver && "bg-secondary",
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <span>{brotmon.emoji}</span>
+          <span>{brotmon.name}</span>
+        </div>
+      </Card>
+    </div>
   );
 }
 
@@ -82,7 +84,7 @@ function BrotmonCard({
       {...listeners}
       className={clsx(
         "select-none",
-        isOverlay ? "cursor-grabbing" : "cursor-grab",
+        isOverlay ? "cursor-grabbing border-muted-foreground border-2" : "cursor-grab",
         isDragging && "opacity-30",
       )}
     >
@@ -107,7 +109,7 @@ function EmptySlot({ index }: { index: number }) {
         isOver && "bg-muted",
       )}
     >
-      <span>Drop Brotmon here</span>
+      <span>🫳 Drop Brotmon here</span>
     </div>
   );
 }
@@ -119,40 +121,41 @@ type BrotmonSelectorProps = {
 
 export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [brotmonsData, setBrotmonsData] = useState<BrotmonItem[]>([]);
+  const [brotmonsData, setBrotmonsData] = useState<BrotmonItem[] | null>(null);
 
   useEffect(() => {
     const fetchBrotmons = async () => {
       const supabase = createClient();
       const { data, error } = await supabase.from("brotmons").select("*");
+      if (error) return;
 
-      if (!error) {
-        const items: BrotmonItem[] = data.map((b) => ({
-          attack: b.attack,
-          defense: b.defense,
-          speed: b.speed,
-          name: b.name,
-          emoji: b.emoji,
-          hp: b.hp,
-          id: b.id,
-        }));
+      const items: BrotmonItem[] = data.map((b) => ({
+        attack: b.attack,
+        defense: b.defense,
+        speed: b.speed,
+        name: b.name,
+        emoji: b.emoji,
+        hp: b.hp,
+        id: b.id,
+      }));
 
-        setBrotmonsData(items);
-      }
+      // validate default value (cause it comes from localStorage, and some Brotmon can be changed/deleted)
+      const isInvalid = value.some((id) => !items.find((b) => b.id === id));
+      if (isInvalid) onChange([]);
+
+      setBrotmonsData(items);
     };
 
     fetchBrotmons();
   }, []);
 
-  const pointerSensor = useSensor(PointerSensor, {
-    activationConstraint: { distance: 5 },
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: { distance: 10 },
   });
-
   const touchSensor = useSensor(TouchSensor, {
-    activationConstraint: { distance: 5 },
+    activationConstraint: { delay: 500, tolerance: 10 },
   });
-
-  const sensors = useSensors(pointerSensor, touchSensor);
+  const sensors = useSensors(mouseSensor, touchSensor);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -184,6 +187,17 @@ export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
     onChange(newValue);
   };
 
+  if (!brotmonsData) {
+    return (
+      <div className="flex h-[500px] items-center justify-center gap-4">
+        <Spinner />
+        <h4 className="text-xl leading-none font-medium">
+          Loading Brotmons 🧌...
+        </h4>
+      </div>
+    );
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -191,8 +205,8 @@ export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
       onDragEnd={handleDragEnd}
       onDragStart={handleDragStart}
     >
-      <div className="grid h-[500px] grid-cols-3 gap-4">
-        <div className="col-span-1 grid grid-cols-1 grid-rows-3 gap-4">
+      <div className="grid h-[500px] gap-12 md:grid-cols-3 md:gap-4">
+        <div className="grid grid-cols-3 gap-4 md:col-span-1 md:grid-cols-1 md:grid-rows-3">
           {[0, 1, 2].map((index) => (
             <div key={index} id={index.toString()}>
               {value[index] ? (
@@ -208,7 +222,7 @@ export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
           ))}
         </div>
 
-        <ScrollArea className="col-span-2 h-[500px]">
+        <ScrollArea className="h-[500px] md:col-span-2">
           <div className="mr-3 grid grid-cols-2 gap-2">
             {brotmonsData.map((b) => (
               <div key={b.id} draggable data-id={b.id}>
