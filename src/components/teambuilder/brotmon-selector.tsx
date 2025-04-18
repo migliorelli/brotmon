@@ -84,7 +84,7 @@ function BrotmonCard({
       {...listeners}
       className={clsx(
         "select-none",
-        isOverlay ? "cursor-grabbing border-muted-foreground border-2" : "cursor-grab",
+        isOverlay ? "cursor-grabbing border-muted-foreground/20 dark:border-secondary border-3" : "cursor-grab",
         isDragging && "opacity-30",
       )}
     >
