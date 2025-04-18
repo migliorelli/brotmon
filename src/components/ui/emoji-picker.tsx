@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/popover";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
+import { useTheme } from "next-themes";
 
 interface EmojiPickerProps {
   value: string;
@@ -15,10 +16,12 @@ interface EmojiPickerProps {
 }
 
 export function EmojiPicker({ value, onChange }: EmojiPickerProps) {
+  const { theme } = useTheme();
+
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="size-10 text-2xl text-center">
+        <Button variant="outline" className="size-10 text-center text-2xl">
           {value}
         </Button>
       </PopoverTrigger>
@@ -26,7 +29,7 @@ export function EmojiPicker({ value, onChange }: EmojiPickerProps) {
         <Picker
           data={data}
           onEmojiSelect={(emoji: any) => onChange(emoji.native)}
-          theme="light"
+          theme={theme}
         />
       </PopoverContent>
     </Popover>
