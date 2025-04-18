@@ -1,3 +1,4 @@
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import Link from "next/link";
 import { JoinBattlePopover } from "./join-battle-popover";
 import { NavbarLink } from "./navbar-link";
@@ -20,6 +21,7 @@ export function Navbar() {
           <NavbarLink href="/">Teambuilder</NavbarLink>
           <NavbarLink href="/brotdex">Brotdex</NavbarLink>
           <JoinBattlePopover />
+          <ThemeToggle />
         </div>
       </div>
     </div>
