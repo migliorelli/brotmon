@@ -18,8 +18,8 @@ export function NavbarLink({
     <Button
       variant="outline"
       className={clsx(
-        "hover:bg-secondary border-0 shadow-none",
-        pathname === href && "bg-secondary/80",
+        "hover:bg-secondary border-0 dark:bg-transparent shadow-none",
+        pathname === href && "bg-secondary dark:bg-secondary",
       )}
     >
       <Link href={href} className="h-full w-full">

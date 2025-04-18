@@ -24,7 +24,10 @@ export function JoinBattlePopover() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="border-0 shadow-none">
+        <Button
+          variant="outline"
+          className="border-0 shadow-none dark:bg-transparent"
+        >
           Join Battle
         </Button>
       </PopoverTrigger>
