@@ -14,6 +14,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { restrictToWindowEdges } from "@dnd-kit/modifiers";
+import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { Card } from "../ui/card";
@@ -46,8 +47,8 @@ function SlotBrotmonCard({
       ref={setNodeRef}
       onClick={remove}
       className={clsx(
-        "grid h-full cursor-pointer items-center select-none active:border-rose-200 active:bg-rose-100/50",
-        isOver && "bg-gray-100",
+        "active:border-destructive/50 active:bg-destructive/10 grid h-full cursor-pointer items-center select-none",
+        isOver && "bg-secondary",
       )}
     >
       <div className="flex items-center gap-2">
@@ -68,12 +69,10 @@ function BrotmonCard({
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: brotmon.id });
 
-  const style =
-    transform && isOverlay
-      ? {
-          transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        }
-      : undefined;
+  const style = {
+    transform:
+      transform && isOverlay ? CSS.Transform.toString(transform) : undefined,
+  };
 
   return (
     <Card
@@ -82,8 +81,9 @@ function BrotmonCard({
       {...attributes}
       {...listeners}
       className={clsx(
-        "cursor-grab select-none",
-        isDragging && `cursor-grabbing p-2 ${isDragging ? "opacity-30" : ""}`,
+        "select-none",
+        isOverlay ? "cursor-grabbing" : "cursor-grab",
+        isDragging && "opacity-30",
       )}
     >
       <div className="flex items-center gap-2">
@@ -103,8 +103,8 @@ function EmptySlot({ index }: { index: number }) {
     <div
       ref={setNodeRef}
       className={clsx(
-        "flex h-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-gray-400 select-none",
-        isOver && "border-gray-400 bg-gray-100 text-gray-400",
+        "border-ring text-muted-foreground flex h-full items-center justify-center rounded-lg border-2 border-dashed select-none",
+        isOver && "bg-muted",
       )}
     >
       <span>Drop Brotmon here</span>
@@ -167,25 +167,20 @@ export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
     const draggedId = active.id;
     const targetIndex = parseInt(over.id as string);
 
-    console.log(draggedId, targetIndex);
-
     if (typeof draggedId !== "string" || isNaN(targetIndex)) return;
 
     const newValue = [...value];
-
-    if (!newValue[targetIndex - 1] && targetIndex > 1) {
+    if (newValue[targetIndex - 1] === undefined && targetIndex > 0) {
       return;
     }
 
     newValue[targetIndex] = draggedId;
-    console.log(newValue);
     onChange(newValue);
   };
 
   const handleRemove = (index: number) => {
     const newValue = [...value];
     newValue.splice(index, 1);
-    console.log(value, newValue);
     onChange(newValue);
   };
 
@@ -226,13 +221,11 @@ export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
 
       <DragOverlay>
         {activeId ? (
-          <div className="opacity-80">
-            <BrotmonCard
-              key={activeId}
-              brotmon={brotmonsData.find((b) => b.id === activeId)!}
-              isOverlay={false}
-            />
-          </div>
+          <BrotmonCard
+            key={activeId}
+            brotmon={brotmonsData.find((b) => b.id === activeId)!}
+            isOverlay={true}
+          />
         ) : null}
       </DragOverlay>
     </DndContext>
