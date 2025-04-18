@@ -1,6 +1,5 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import {
   DndContext,
   DragEndEvent,
@@ -16,12 +15,11 @@ import {
 import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
-import { Spinner } from "../ui/spinner";
 
-type BrotmonItem = {
+export type BrotmonItem = {
   name: string;
   emoji: string;
   hp: number;
@@ -84,7 +82,9 @@ function BrotmonCard({
       {...listeners}
       className={clsx(
         "select-none",
-        isOverlay ? "cursor-grabbing border-muted-foreground/20 dark:border-secondary border-3" : "cursor-grab",
+        isOverlay
+          ? "border-muted-foreground/20 dark:border-secondary cursor-grabbing border-3"
+          : "cursor-grab",
         isDragging && "opacity-30",
       )}
     >
@@ -115,39 +115,17 @@ function EmptySlot({ index }: { index: number }) {
 }
 
 type BrotmonSelectorProps = {
+  brotmons: BrotmonItem[];
   value: string[];
   onChange: (value: string[]) => void;
 };
 
-export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
+export function BrotmonSelector({
+  brotmons,
+  value,
+  onChange,
+}: BrotmonSelectorProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [brotmonsData, setBrotmonsData] = useState<BrotmonItem[] | null>(null);
-
-  useEffect(() => {
-    const fetchBrotmons = async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase.from("brotmons").select("*");
-      if (error) return;
-
-      const items: BrotmonItem[] = data.map((b) => ({
-        attack: b.attack,
-        defense: b.defense,
-        speed: b.speed,
-        name: b.name,
-        emoji: b.emoji,
-        hp: b.hp,
-        id: b.id,
-      }));
-
-      // validate default value (cause it comes from localStorage, and some Brotmon can be changed/deleted)
-      const isInvalid = value.some((id) => !items.find((b) => b.id === id));
-      if (isInvalid) onChange([]);
-
-      setBrotmonsData(items);
-    };
-
-    fetchBrotmons();
-  }, []);
 
   const mouseSensor = useSensor(MouseSensor, {
     activationConstraint: { distance: 10 },
@@ -187,17 +165,6 @@ export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
     onChange(newValue);
   };
 
-  if (!brotmonsData) {
-    return (
-      <div className="flex h-[500px] items-center justify-center gap-4">
-        <Spinner />
-        <h4 className="text-xl leading-none font-medium">
-          Loading Brotmons 🧌...
-        </h4>
-      </div>
-    );
-  }
-
   return (
     <DndContext
       sensors={sensors}
@@ -211,7 +178,7 @@ export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
             <div key={index} id={index.toString()}>
               {value[index] ? (
                 <SlotBrotmonCard
-                  brotmon={brotmonsData.find((b) => b.id === value[index])!}
+                  brotmon={brotmons.find((b) => b.id === value[index])!}
                   index={index}
                   remove={() => handleRemove(index)}
                 />
@@ -224,7 +191,7 @@ export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
 
         <ScrollArea className="h-[500px] md:col-span-2">
           <div className="mr-3 grid grid-cols-2 gap-2">
-            {brotmonsData.map((b) => (
+            {brotmons.map((b) => (
               <div key={b.id} draggable data-id={b.id}>
                 <BrotmonCard brotmon={b} />
               </div>
@@ -237,7 +204,7 @@ export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
         {activeId ? (
           <BrotmonCard
             key={activeId}
-            brotmon={brotmonsData.find((b) => b.id === activeId)!}
+            brotmon={brotmons.find((b) => b.id === activeId)!}
             isOverlay={true}
           />
         ) : null}

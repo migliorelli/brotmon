@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Button } from "../ui/button";
 import { EmojiPicker } from "../ui/emoji-picker";
 import { Input } from "../ui/input";
-import { BrotmonSelector } from "./brotmon-selector";
+import { BrotmonItem, BrotmonSelector } from "./brotmon-selector";
 
 const formSchema = z.object({
   name: z.string().min(3, "Name has to be at least 3 characters loong"),
@@ -26,35 +26,25 @@ export type TeambuilderData = {
 
 type TeambuilderProps = {
   onSubmit: (data: TeambuilderData) => Promise<void>;
+  brotmons: BrotmonItem[];
   submitButtonText?: string;
 };
 
 export function Teambuilder({
+  brotmons,
   onSubmit,
-  submitButtonText = "Create Battle",
+  submitButtonText = "🕹️ Create Battle",
 }: TeambuilderProps) {
-  const [emoji, setEmoji] = usePersistentState<string>(
-    "teambuilder_emoji",
-    "🧠",
-  );
-
-  const [username, setUsername] = usePersistentState(
-    "teambuilder_username",
-    "",
-  );
-
-  const [brotmons, setBrotmons] = usePersistentState<string[]>(
-    "teambuilder_brotmons",
-    [],
-  );
-
+  const [emoji, setEmoji] = usePersistentState<string>("tb_emoji", "🧠");
+  const [username, setUsername] = usePersistentState("tb_username", "");
+  const [team, setTeam] = usePersistentState<string[]>("tb_team", []);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = () => {
     const data = {
       name: username,
       emoji,
-      brotmons,
+      brotmons: team,
     };
 
     const result = formSchema.safeParse(data);
@@ -103,7 +93,11 @@ export function Teambuilder({
           <div></div>
         </div>
 
-        <BrotmonSelector value={brotmons} onChange={(b) => setBrotmons(b)} />
+        <BrotmonSelector
+          brotmons={brotmons}
+          value={team}
+          onChange={(b) => setTeam(b)}
+        />
       </div>
     </div>
   );
