@@ -151,11 +151,10 @@ export function BrotmonSelector({
     if (typeof draggedId !== "string" || isNaN(targetIndex)) return;
 
     const newValue = [...value];
-    if (newValue[targetIndex - 1] === undefined && targetIndex > 0) {
-      return;
-    }
 
-    newValue[targetIndex] = draggedId;
+    const newIndex = newValue[targetIndex - 1] === undefined ? newValue.length : targetIndex;
+    newValue[newIndex] = draggedId;
+
     onChange(newValue);
   };
 
