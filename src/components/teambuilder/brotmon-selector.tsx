@@ -1,6 +1,5 @@
 "use client";
 
-import { availableBrotmons } from "@/data/brotmons";
 import { createClient } from "@/lib/supabase/client";
 import {
   DndContext,
@@ -23,26 +22,24 @@ import { ScrollArea } from "../ui/scroll-area";
 type BrotmonItem = {
   name: string;
   emoji: string;
-  max_hp: number;
+  hp: number;
   defense: number;
   speed: number;
   id: string;
 };
 
 function SlotBrotmonCard({
-  id,
   index,
   remove,
+  brotmon,
 }: {
-  id: string;
   index: number;
+  brotmon: BrotmonItem;
   remove: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: index.toString(),
   });
-
-  const brotmon = availableBrotmons[id];
 
   return (
     <Card
@@ -136,7 +133,7 @@ export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
           speed: b.speed,
           name: b.name,
           emoji: b.emoji,
-          max_hp: b.max_hp,
+          hp: b.hp,
           id: b.id,
         }));
 
@@ -205,7 +202,7 @@ export function BrotmonSelector({ value, onChange }: BrotmonSelectorProps) {
             <div key={index} id={index.toString()}>
               {value[index] ? (
                 <SlotBrotmonCard
-                  id={value[index]}
+                  brotmon={brotmonsData.find((b) => b.id === value[index])!}
                   index={index}
                   remove={() => handleRemove(index)}
                 />

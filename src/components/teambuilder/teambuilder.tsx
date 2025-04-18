@@ -1,10 +1,12 @@
+"use client";
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { BrotmonSelector } from "./brotmon-selector";
 import { Button } from "../ui/button";
 import { EmojiPicker } from "../ui/emoji-picker";
 import { Input } from "../ui/input";
+import { BrotmonSelector } from "./brotmon-selector";
 
 const formSchema = z.object({
   name: z.string().min(3, "Name has to be at least 3 characters loong"),
