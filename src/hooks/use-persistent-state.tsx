@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 
-export function usePersistentState<T extends any>(key: string, initalValue: T) {
+export function usePersistentState<T extends any>(key: string, initialValue: T) {
   const [state, setState] = useState<T>(() => {
     const storedValue = localStorage.getItem(key);
     if (storedValue) {
       return JSON.parse(storedValue);
     }
 
-    return initalValue;
+    return initialValue;
   });
 
   useEffect(() => {
