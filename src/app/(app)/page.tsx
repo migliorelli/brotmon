@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import Homepage from "@/pages/Homepage";
+import Homepage from "@/pages/home-page";
 
 export default async function Page() {
   const supabase = await createClient();
