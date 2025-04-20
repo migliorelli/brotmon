@@ -10,7 +10,7 @@ Brotmon (B-rotmon) is a turn-based battle game inspired by Pokémon's combat sys
 - 🖥️ Brotdex (Brotmon Codex)
 - 🌓 Light/dark theme support
 
-## Todo
+## ☑️ Todo
 
 - ⚡ Optimized performance
 - 📱 Mobile-friendly gameplay
