@@ -8,62 +8,43 @@ export async function POST(
 ) {
   try {
     const { battle_id } = await params;
-    const { trainerRequest } = (await req.json()) as {
-      trainerRequest: ApiTrainer;
+    const { trainer } = (await req.json()) as {
+      trainer: ApiTrainer;
     };
 
     if (!battle_id) {
-      return NextResponse.json(
-        { error: "Battle ID is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Battle ID is required" }, { status: 400 });
     }
 
     if (
-      !trainerRequest ||
-      !trainerRequest.username ||
-      !trainerRequest.emoji ||
-      !trainerRequest.brotmons ||
-      trainerRequest.brotmons.length === 0
+      !trainer ||
+      !trainer.username ||
+      !trainer.emoji ||
+      !trainer.brotmons ||
+      trainer.brotmons.length === 0
     ) {
-      return NextResponse.json(
-        { error: "Invalid trainer data" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid trainer data" }, { status: 400 });
     }
 
     // check if the trainer has more than 3 brotmons
-    if (trainerRequest.brotmons.length > 3) {
-      return NextResponse.json(
-        { error: "Trainer can have at most 3 Brotmons" },
-        { status: 400 },
-      );
+    if (trainer.brotmons.length > 3) {
+      return NextResponse.json({ error: "Trainer can have at most 3 Brotmons" }, { status: 400 });
     }
 
     const battleService = await BattleService.getInstance();
-    const { trainer_id, error: trainerError } =
-      await battleService.createTrainer(trainerRequest);
+    const { trainer_id, error: trainerError } = await battleService.createTrainer(trainer);
 
     if (trainerError !== null) {
       return NextResponse.json({ error: trainerError }, { status: 500 });
     }
 
     if (!trainer_id) {
-      return NextResponse.json(
-        { error: "Error creating trainer" },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "Error creating trainer" }, { status: 500 });
     }
 
-    const { error: joinError } = await battleService.joinBattle(
-      battle_id,
-      trainer_id,
-    );
+    const { error: joinError } = await battleService.joinBattle(battle_id, trainer_id);
     if (joinError !== null) {
-      return NextResponse.json(
-        { error: "Error creating battle room" },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "Error joining battle room" }, { status: 500 });
     }
 
     const response = NextResponse.json({ battle_id }, { status: 200 });
@@ -77,9 +58,6 @@ export async function POST(
     return response;
   } catch (error) {
     console.error("Error creating battle:", error);
-    return NextResponse.json(
-      { error: "Error creating battle" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Error creating battle" }, { status: 500 });
   }
 }
