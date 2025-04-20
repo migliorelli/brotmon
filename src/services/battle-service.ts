@@ -455,7 +455,7 @@ export class BattleService {
           `,
         )
         .eq("id", move_id)
-        .eq("brotmon_id", brotmon_id)
+        .eq("trainer_brotmon_id", brotmon_id)
         .gt("current_uses", 0)
         .limit(1);
 
