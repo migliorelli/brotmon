@@ -102,9 +102,9 @@ supabase/
 
 ## 🛠️ Development
 
-- Run `npm run dev` to start the development server
-- Run `npm run build` to create a production build
-- Run `npm run start` to start the production server
+- Run `yarn dev` to start the development server
+- Run `yarn build` to create a production build
+- Run `yarn start` to start the production server
 
 ## 📄 License
 
