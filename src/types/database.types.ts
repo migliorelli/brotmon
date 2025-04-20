@@ -61,21 +61,21 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "battle_states_battle_id_fkey"
+            foreignKeyName: "battle_actions_battle_id_fkey"
             columns: ["battle_id"]
             isOneToOne: false
             referencedRelation: "battles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "battle_states_brotmon_id_fkey"
+            foreignKeyName: "battle_actions_brotmon_id_fkey"
             columns: ["brotmon_id"]
             isOneToOne: false
             referencedRelation: "trainer_brotmons"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "battle_states_trainer_id_fkey"
+            foreignKeyName: "battle_actions_trainer_id_fkey"
             columns: ["trainer_id"]
             isOneToOne: false
             referencedRelation: "trainers"
