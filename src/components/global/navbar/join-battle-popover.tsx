@@ -2,19 +2,17 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 
 export function JoinBattlePopover() {
   const id = useId();
   const [value, setValue] = useState("");
+  const router = useRouter();
 
   const handleSubmit = () => {
-    console.log("submit", value);
+    router.push(`/battle/join/${value}`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -24,10 +22,7 @@ export function JoinBattlePopover() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className="border-0 shadow-none dark:bg-transparent"
-        >
+        <Button variant="outline" className="border-0 shadow-none dark:bg-transparent">
           Join Battle
         </Button>
       </PopoverTrigger>
@@ -35,9 +30,7 @@ export function JoinBattlePopover() {
         <div className="grid gap-2">
           <div className="space-y-2">
             <h4 className="leading-none font-medium">Join Battle</h4>
-            <p className="text-muted-foreground text-sm">
-              Enter the battle ID to join.
-            </p>
+            <p className="text-muted-foreground text-sm">Enter the battle ID to join.</p>
           </div>
           <div className="flex items-center gap-2">
             <Input
