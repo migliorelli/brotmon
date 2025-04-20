@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { JoinBattlePage } from "@/pages/JoinBattlePage";
+import { JoinBattlePage } from "@/pages/join-battle-page";
 
 export default async function Page({
   params,
