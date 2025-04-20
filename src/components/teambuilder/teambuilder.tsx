@@ -35,7 +35,7 @@ export function Teambuilder({
   onSubmit,
   submitButtonText = "🕹️ Create Battle",
 }: TeambuilderProps) {
-  const [emoji, setEmoji] = usePersistentState<string>("tb_emoji", "🧠");
+  const [emoji, setEmoji] = usePersistentState("tb_emoji", "🧠");
   const [username, setUsername] = usePersistentState("tb_username", "");
   const [team, setTeam] = usePersistentState<string[]>("tb_team", []);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export function Teambuilder({
     if (!isTeamValid) setTeam([]);
 
     setValidated(true);
-  }, [team, brotmons]);
+  }, [team, brotmons, setTeam]);
 
   if (!validated) return null;
 
