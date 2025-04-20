@@ -1,3 +1,4 @@
+import { createClient } from "@/lib/supabase/server";
 import { BattleService } from "@/services/battle-service";
 import { BattleAction, BattleActionPayload } from "@/types/battle-service.types";
 import { NextRequest, NextResponse } from "next/server";
@@ -28,7 +29,9 @@ export async function POST(
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
-    const battleService = await BattleService.getInstance();
+    const supabase = await createClient();
+    const battleService = new BattleService(supabase);
+
     const { error } = await battleService.performAction(battle_id, trainer_id.value, data);
 
     if (error !== null) {

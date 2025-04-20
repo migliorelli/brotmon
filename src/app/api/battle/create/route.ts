@@ -1,3 +1,4 @@
+import { createClient } from "@/lib/supabase/server";
 import { BattleService } from "@/services/battle-service";
 import { ApiTrainer } from "@/types/trainer.type";
 import { NextRequest, NextResponse } from "next/server";
@@ -15,10 +16,7 @@ export async function POST(req: NextRequest) {
       !trainer.brotmons ||
       trainer.brotmons.length === 0
     ) {
-      return NextResponse.json(
-        { error: "Invalid trainer data" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid trainer data" }, { status: 400 });
     }
 
     // check if the trainer has more than 3 brotmons or less than 1 brotmon
@@ -29,23 +27,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const battleService = await BattleService.getInstance();
+    const supabase = await createClient();
+    const battleService = new BattleService(supabase);
 
-    const { trainer_id, error: trainerError } =
-      await battleService.createTrainer(trainer);
+    const { trainer_id, error: trainerError } = await battleService.createTrainer(trainer);
     if (trainerError !== null) {
       return NextResponse.json({ error: trainerError }, { status: 500 });
     }
 
     if (!trainer_id) {
-      return NextResponse.json(
-        { error: "Error creating trainer" },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "Error creating trainer" }, { status: 500 });
     }
 
-    const { battle_id, error: battleError } =
-      await battleService.createBattle(trainer_id);
+    const { battle_id, error: battleError } = await battleService.createBattle(trainer_id);
     if (battleError !== null) {
       return NextResponse.json({ error: battleError }, { status: 500 });
     }
@@ -61,9 +55,6 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (error) {
     console.error("Error creating battle:", error);
-    return NextResponse.json(
-      { error: "Failed to create battle" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to create battle" }, { status: 500 });
   }
 }

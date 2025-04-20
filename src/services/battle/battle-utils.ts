@@ -3,7 +3,7 @@ import { Nature } from "@/types/battle-service.types";
 import { StatusEffect, StatusEffectEnum } from "@/types/status-effect.type";
 
 export class BattleUtils {
-  public static calculateDamage(
+  calculateDamage(
     power: number,
     attack: number,
     defense: number,
@@ -29,7 +29,7 @@ export class BattleUtils {
     return [Math.floor(damage), critical === 2] as const;
   }
 
-  public static getStatusMultiplier(
+  getStatusMultiplier(
     modifier: keyof NonNullable<StatusEffect["modifiers"]>,
     effects: StatusEffect[],
   ) {

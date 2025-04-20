@@ -1,3 +1,4 @@
+import { createClient } from "@/lib/supabase/server";
 import { BattleService } from "@/services/battle-service";
 import { ApiTrainer } from "@/types/trainer.type";
 import { NextRequest, NextResponse } from "next/server";
@@ -31,7 +32,9 @@ export async function POST(
       return NextResponse.json({ error: "Trainer can have at most 3 Brotmons" }, { status: 400 });
     }
 
-    const battleService = await BattleService.getInstance();
+    const supabase = await createClient();
+    const battleService = new BattleService(supabase);
+
     const { trainer_id, error: trainerError } = await battleService.createTrainer(trainer);
 
     if (trainerError !== null) {

@@ -14,8 +14,10 @@ export type InterruptiveEffectHandler = (
 ) => InterruptiveEffectResult;
 
 export class StatusEffectHandler {
+  private battleUtils = new BattleUtils();
+
   // @ts-ignore
-  static handlers: Record<StatusEffectEnum, InterruptiveEffectHandler> = {
+  private handlers: Record<StatusEffectEnum, InterruptiveEffectHandler> = {
     [StatusEffectEnum.PARALYZE]: (
       brotmon: TurnBrotmon,
       effect: StatusEffect,
@@ -61,12 +63,12 @@ export class StatusEffectHandler {
         effect.duration--;
         // 1/2 chance of self damage
         if (Math.random() < 1 / 2) {
-          const attackMultiplier = BattleUtils.getStatusMultiplier(
+          const attackMultiplier = this.battleUtils.getStatusMultiplier(
             "attack",
             brotmon.effects as StatusEffect[],
           );
 
-          const defenseMultiplier = BattleUtils.getStatusMultiplier(
+          const defenseMultiplier = this.battleUtils.getStatusMultiplier(
             "defense",
             brotmon.effects as StatusEffect[],
           );
@@ -138,7 +140,7 @@ export class StatusEffectHandler {
     },
   };
 
-  static processInterruptiveEffects(brotmon: TurnBrotmon): {
+  processInterruptiveEffects(brotmon: TurnBrotmon): {
     brotmon: TurnBrotmon;
     interrupt: {
       cause: StatusEffectEnum;
@@ -168,11 +170,7 @@ export class StatusEffectHandler {
     return result;
   }
 
-  static applyStatusEffect(
-    brotmon: TurnBrotmon,
-    effect: StatusEffect,
-    moveName: string,
-  ) {
+  applyStatusEffect(brotmon: TurnBrotmon, effect: StatusEffect, moveName: string) {
     const resultBrotmon = { ...brotmon };
     if (!resultBrotmon.effects) {
       resultBrotmon.effects = [] as StatusEffect[];
@@ -196,5 +194,39 @@ export class StatusEffectHandler {
       message: `${resultBrotmon.base.name} was affected by ${effect.type.toLowerCase()} from ${moveName}!`,
       brotmon: resultBrotmon,
     };
+  }
+
+  processStatusEffect(brotmon: TurnBrotmon) {
+    const logs: string[] = [];
+    const copy = { ...brotmon };
+
+    if (!copy.effects) {
+      return { brotmon: copy, logs };
+    }
+
+    copy.effects = copy.effects.filter((effect) => {
+      // always skip permanent effects
+      if (effect.duration === -1) return true;
+
+      // BUFF, DEBUFF, PARALYZE, SLEEP and BRAINROT are handled in battle logic
+      switch (effect.type) {
+        case StatusEffectEnum.POISON:
+          const pDamage = Math.floor(copy.base.hp / 8);
+          copy.current_hp = Math.max(0, copy.current_hp - pDamage);
+          logs.push(`${copy.base.name} took ${pDamage} damage from poison!`);
+          break;
+
+        case StatusEffectEnum.BURN:
+          const bDamage = Math.floor(copy.base.hp / 16);
+          copy.current_hp = Math.max(0, copy.current_hp - bDamage);
+          logs.push(`${copy.base.name} took ${bDamage} damage from burn!`);
+          break;
+      }
+
+      effect.duration -= 1;
+      return effect.duration > 0;
+    });
+
+    return { brotmon: copy, logs };
   }
 }
