@@ -1,4 +1,5 @@
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import Image from "next/image";
 import Link from "next/link";
 import { JoinBattlePopover } from "./join-battle-popover";
 import { JoinBattleTitle } from "./join-battle-title";
@@ -12,7 +13,7 @@ export function Navbar() {
           href="/"
           className="hover:bg-secondary/80 my-2 flex items-center justify-self-start rounded-lg pr-4 pl-2"
         >
-          <img src="/icon.png" height={48} width={48} />
+          <Image src="/icon.png" height={48} width={48} alt="brotmon" />
           <span className="hidden text-2xl font-bold md:block">
             <span className="text-pink-400">Brot</span>mon
           </span>
