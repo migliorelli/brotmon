@@ -36,11 +36,12 @@ export class BattleActionHandlers {
       }
 
       return { action, error: null };
-    } catch (err: any) {
+    } catch (err) {
+      const error = err instanceof Error ? err.message : "Failed to execute switch action";
       console.error(`[BattleActionHandlers] Exception in handleSwitchAction:`, {
-        error: err.message,
+        error,
       });
-      return { error: err.message };
+      return { error };
     }
   }
 
@@ -75,11 +76,11 @@ export class BattleActionHandlers {
       }
 
       return { action, error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[BattleActionHandlers] Exception in handleMoveAction:`, {
-        error: err.message,
+        error: err instanceof Error ? err.message : "Failed to handle move action",
       });
-      return { error: err.message };
+      return { error: err instanceof Error ? err.message : "Failed to handle move action" };
     }
   }
 
@@ -116,11 +117,12 @@ export class BattleActionHandlers {
       }
 
       return { brotmon, error: null };
-    } catch (err: any) {
+    } catch (err) {
+      const error = err instanceof Error ? err.message : "Failed to switch Brotmon";
       console.error(`[BattleActionHandlers] Exception in handleSwitch:`, {
-        error: err.message,
+        error,
       });
-      return { brotmon: null, error: err.message };
+      return { brotmon: null, error };
     }
   }
 
@@ -179,11 +181,11 @@ export class BattleActionHandlers {
       }
 
       return { error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[BattleActionHandlers] Exception in autoSwitchBrotmon:`, {
-        error: err.message,
+        error: err instanceof Error ? err.message : "Failed to auto switch brotmon",
       });
-      return { error: err.message };
+      return { error: err instanceof Error ? err.message : "Failed to auto switch brotmon" };
     }
   }
 
@@ -215,17 +217,18 @@ export class BattleActionHandlers {
           error: movesError.message,
         });
         return { move: null, error: movesError.message };
-      } if (!moves || moves.length === 0) {
+      }
+      if (!moves || moves.length === 0) {
         return { move: moves[0], error: "Usage limit reached" };
       }
 
       const move = moves[0];
       return { move, error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[BattleActionHandlers] Exception in getMove:`, {
-        error: err.message,
+        error: err instanceof Error ? err.message : "Failed to get move",
       });
-      return { move: null, error: err.message };
+      return { move: null, error: err instanceof Error ? err.message : "Failed to get move" };
     }
   }
 }

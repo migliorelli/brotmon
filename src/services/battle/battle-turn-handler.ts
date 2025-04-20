@@ -81,12 +81,13 @@ export class BattleTurnHandler {
       }
 
       return { battleTurn: data, error: null };
-    } catch (err: any) {
+    } catch (err) {
+      const error = err instanceof Error ? err.message : "Failed to get battle turn";
       console.error(`[BattleTurnHandler] Exception in getBattleTurn:`, {
         battle_id,
-        error: err.message,
+        error,
       });
-      return { battleTurn: null, error: err.message };
+      return { battleTurn: null, error };
     }
   }
 
@@ -248,7 +249,7 @@ export class BattleTurnHandler {
           if (updateMoveError) {
             console.error("Error updating move usage:", updateMoveError.message);
           }
-        } catch (err: any) {
+        } catch (err) {
           console.error("Exception updating move usage:", err);
         }
 

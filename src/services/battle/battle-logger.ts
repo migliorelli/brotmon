@@ -35,11 +35,13 @@ export class BattleLogger {
       }
 
       return { error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[BattleLogger] Exception in logMessages:`, {
-        error: err.message
+        battle_id,
+        turn_id,
+        error: err instanceof Error ? err.message : "Failed to log messages"
       });
-      return { error: err.message };
+      return { error: err instanceof Error ? err.message : "Failed to log messages" };
     }
   }
 
@@ -68,11 +70,11 @@ export class BattleLogger {
       }
 
       return { error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[BattleLogger] Exception in logMessage:`, {
-        error: err.message
+        error: err instanceof Error ? err.message : "Failed to log message"
       });
-      return { error: err.message };
+      return { error: err instanceof Error ? err.message : "Failed to log message" };
     }
   }
 }

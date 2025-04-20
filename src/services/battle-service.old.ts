@@ -1,3 +1,5 @@
+/* eslint-disable no-use-before-define */
+
 import { getSpeedMultipliers } from "@/lib/battle/battle-utils";
 import {
   applyStatusEffect,

@@ -16,7 +16,7 @@ export type InterruptiveEffectHandler = (
 export class StatusEffectHandler {
   private battleUtils = new BattleUtils();
 
-  // @ts-expect-error
+  // @ts-expect-error: should use Partial, but it doesn't work as I want
   private handlers: Record<StatusEffectEnum, InterruptiveEffectHandler> = {
     [StatusEffectEnum.PARALYZE]: (
       brotmon: TurnBrotmon,
@@ -150,7 +150,7 @@ export class StatusEffectHandler {
     const result = { interrupt: null, brotmon };
     if (!brotmon.effects) return result;
 
-    for (let effect of brotmon.effects as StatusEffect[]) {
+    for (const effect of brotmon.effects as StatusEffect[]) {
       if (effect.type in this.handlers) {
         const handler = this.handlers[effect.type];
         const { interrupt, message, brotmon: returnBrotmon } = handler({ ...brotmon }, effect);

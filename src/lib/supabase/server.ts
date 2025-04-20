@@ -13,10 +13,8 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        // @ts-expect-error
         setAll(cookiesToSet) {
           try {
-            // @ts-expect-error
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options),
             );

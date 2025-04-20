@@ -44,11 +44,11 @@ export class BattleService {
       }
 
       return { trainer_id, error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[BattleService] Exception in createTrainer:`, {
-        error: err.message,
+        error: err instanceof Error ? err.message : "Failed to create trainer",
       });
-      return { trainer_id: null, error: err.message as string };
+      return { trainer_id: null, error: err instanceof Error ? err.message : "Failed to create trainer" };
     }
   }
 
@@ -74,11 +74,11 @@ export class BattleService {
       }
 
       return { battle_id: battleId, error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[BattleService] Exception in createBattle:`, {
-        error: err.message,
+        error: err instanceof Error ? err.message : "Failed to create battle",
       });
-      return { battle_id: null, error: err.message as string };
+      return { battle_id: null, error: err instanceof Error ? err.message : "Failed to create battle" };
     }
   }
 
@@ -108,11 +108,11 @@ export class BattleService {
       }
 
       return { error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[BattleService] Exception in joinBattle:`, {
-        error: err.message,
+        error: err instanceof Error ? err.message : "Failed to join battle",
       });
-      return { error: err.message as string };
+      return { error: err instanceof Error ? err.message : "Failed to join battle" };
     }
   }
 
@@ -138,11 +138,11 @@ export class BattleService {
       }
 
       return { battle_id, error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[BattleService] Exception in startBattle:`, {
-        error: err.message,
+        error: err instanceof Error ? err.message : "Failed to start battle",
       });
-      return { battle_id: null, error: err.message as string };
+      return { battle_id: null, error: err instanceof Error ? err.message : "Failed to start battle" };
     }
   }
 
@@ -170,11 +170,11 @@ export class BattleService {
       }
 
       return { battle: data, error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[BattleService] Exception in getActionBattle:`, {
-        error: err.message,
+        error: err instanceof Error ? err.message : "Failed to get battle action",
       });
-      return { battle: null, error: err.message as string };
+      return { battle: null, error: err instanceof Error ? err.message : "Failed to get battle action" };
     }
   }
 
@@ -239,11 +239,11 @@ export class BattleService {
       }
 
       return { error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[BattleService] Exception in finishBattle:`, {
-        error: err.message,
+        error: err instanceof Error ? err.message : "Failed to finish battle",
       });
-      return { error: err.message as string };
+      return { error: err instanceof Error ? err.message : "Failed to finish battle" };
     }
   }
 
@@ -527,11 +527,11 @@ export class BattleService {
       }
 
       return { error: null };
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[BattleService] Exception in performAction:`, {
-        error: err.message as string,
+        error: err instanceof Error ? err.message : "Failed to perform action",
       });
-      return { error: err.message as string };
+      return { error: err instanceof Error ? err.message : "Failed to perform action" };
     }
   }
 }
