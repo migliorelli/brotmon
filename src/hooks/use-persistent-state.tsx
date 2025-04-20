@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export function usePersistentState<T extends any>(key: string, initialValue: T) {
+export function usePersistentState<T>(key: string, initialValue: T) {
   const [state, setState] = useState<T>(() => {
     const storedValue = localStorage.getItem(key);
     if (storedValue) {
