@@ -1,12 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import data from "@emoji-mart/data";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import data, { type Skin } from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { useTheme } from "next-themes";
 
@@ -26,11 +22,7 @@ export function EmojiPicker({ value, onChange }: EmojiPickerProps) {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="border-none p-0">
-        <Picker
-          data={data}
-          onEmojiSelect={(emoji: any) => onChange(emoji.native)}
-          theme={theme}
-        />
+        <Picker data={data} onEmojiSelect={(emoji: Skin) => onChange(emoji.native)} theme={theme} />
       </PopoverContent>
     </Popover>
   );
