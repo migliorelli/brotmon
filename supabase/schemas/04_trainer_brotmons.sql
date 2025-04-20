@@ -15,4 +15,8 @@ CREATE TABLE trainer_brotmons (
 CREATE
 OR REPLACE TRIGGER before_insert_trainer_brotmon BEFORE
 INSERT
-  ON trainer_brotmons FOR EACH ROW EXECUTE FUNCTION insert_trainer_brotmon();
+  ON trainer_brotmons FOR EACH ROW EXECUTE FUNCTION before_insert_trainer_brotmon();
+
+CREATE OR REPLACE TRIGGER after_inser_trainer_brotmon AFTER 
+INSERT 
+  ON trainer_brotmons FOR EACH ROW EXECUTE FUNCTION after_insert_trainer_brotmon();

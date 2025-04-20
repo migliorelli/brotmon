@@ -81,15 +81,15 @@ RETURNS uuid
 LANGUAGE plpgsql
 AS $$
 DECLARE 
-    v_battle_action_id uuid;
     v_battle_id uuid;
-    v_brotmon_id uuid;
+    v_battle_action_id uuid;
+    v_trainer_brotmon_id uuid;
     v_turn_id uuid;
     v_host_username text;
     v_log_message text;
 BEGIN
-    -- get host username and brotmon_id
-    SELECT t.username, tb.brotmon_id INTO v_host_username, v_brotmon_id
+    -- get host username and trainer_brotmons id
+    SELECT t.username, tb.id INTO v_host_username, v_trainer_brotmon_id
     FROM trainers as t
     JOIN trainer_brotmons as tb 
     ON tb.id = (SELECT id FROM trainer_brotmons WHERE trainer_id = p_host_id ORDER BY created_at LIMIT 1)
@@ -106,7 +106,7 @@ BEGIN
 
     -- create host battle action
     INSERT INTO battle_actions (battle_id, trainer_id, brotmon_id)
-    VALUES (v_battle_id, p_host_id, v_brotmon_id)
+    VALUES (v_battle_id, p_host_id, v_trainer_brotmon_id)
     RETURNING id INTO v_battle_action_id;
 
     -- create first turn
@@ -190,7 +190,7 @@ $$;
 
 
 -- trigger function to set the current HP of a trainer's brotmon
-CREATE FUNCTION insert_trainer_brotmon()
+CREATE FUNCTION before_insert_trainer_brotmon()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -203,15 +203,40 @@ BEGIN
 END;
 $$;
 
+-- trigger function to create brotmon_moves based on new trainer_brotmon
+CREATE FUNCTION after_insert_trainer_brotmon()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    move_record RECORD;
+BEGIN    
+    FOR move_record IN
+        SELECT move_id 
+        FROM brotmon_owned_moves
+        WHERE brotmon_id = NEW.brotmon_id
+    LOOP
+        INSERT INTO brotmon_moves (trainer_brotmon_id, move_id, current_uses)
+        VALUES (
+            NEW.id,
+            move_record.move_id, 
+            (SELECT max_uses FROM moves WHERE id = move_record.move_id)
+        );
+    END LOOP;
+
+    RETURN NEW;
+END;
+$$;
+
 -- join a battle as a guest
 CREATE FUNCTION join_battle(p_guest_id uuid, p_battle_id uuid)
 RETURNS void
 LANGUAGE plpgsql
 AS $$
 DECLARE 
-    v_brotmon_id uuid;
-    v_turn_id uuid;
     v_battle_action_id uuid;
+    v_trainer_brotmon_id uuid;
+    v_turn_id uuid;
     v_guest_username text;
     v_log_message text;
 BEGIN
@@ -219,8 +244,8 @@ BEGIN
         RAISE EXCEPTION 'Battle is not in WAITING state';
     END IF;
 
-    -- get guest username and brotmon_id
-    SELECT t.username, tb.brotmon_id INTO v_guest_username, v_brotmon_id
+    -- get guest username and trainer_brotmons id
+    SELECT t.username, tb.id INTO v_guest_username, v_trainer_brotmon_id
     FROM trainers as t
     JOIN trainer_brotmons as tb 
     ON tb.id = (SELECT id FROM trainer_brotmons WHERE trainer_id = p_guest_id ORDER BY created_at LIMIT 1)
@@ -241,7 +266,7 @@ BEGIN
 
     -- create guest action
     INSERT INTO battle_actions (battle_id, trainer_id, brotmon_id)
-    VALUES (p_battle_id, p_guest_id, v_brotmon_id)
+    VALUES (p_battle_id, p_guest_id, v_trainer_brotmon_id)
     RETURNING id INTO v_battle_action_id;
 
     -- update turn and return its id
@@ -260,6 +285,10 @@ BEGIN
     -- create log
     INSERT INTO battle_logs (battle_id, turn_id, message)
     VALUES (p_battle_id, v_turn_id, v_log_message);
+    
+    UPDATE battles
+    SET state = 'READY'
+    WHERE id = p_battle_id AND state = 'WAITING';
 
 EXCEPTION 
     WHEN OTHERS THEN 

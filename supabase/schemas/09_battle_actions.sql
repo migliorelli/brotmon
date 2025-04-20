@@ -7,8 +7,8 @@ CREATE TABLE battle_actions (
   action action_type,
   target_id uuid,
 
-  CONSTRAINT battle_states_pkey PRIMARY KEY (id),
-  CONSTRAINT battle_states_battle_id_fkey FOREIGN KEY (battle_id) REFERENCES battles(id) ON DELETE CASCADE,
-  CONSTRAINT battle_states_brotmon_id_fkey FOREIGN KEY (brotmon_id) REFERENCES trainer_brotmons(id),
-  CONSTRAINT battle_states_trainer_id_fkey FOREIGN KEY (trainer_id) REFERENCES trainers(id)
+  CONSTRAINT battle_actions_pkey PRIMARY KEY (id),
+  CONSTRAINT battle_actions_battle_id_fkey FOREIGN KEY (battle_id) REFERENCES battles(id) ON DELETE CASCADE,
+  CONSTRAINT battle_actions_brotmon_id_fkey FOREIGN KEY (brotmon_id) REFERENCES trainer_brotmons(id),
+  CONSTRAINT battle_actions_trainer_id_fkey FOREIGN KEY (trainer_id) REFERENCES trainers(id)
 );
