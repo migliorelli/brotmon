@@ -33,7 +33,7 @@ Brotmon (B-rotmon) is a turn-based battle game inspired by Pokémon's combat sys
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/brotmon.git
+git clone https://github.com/migliorelli/brotmon.git
 ```
 
 2. Install dependencies:
