@@ -8,11 +8,11 @@ Brotmon (B-rotmon) is a turn-based battle game inspired by Pokémon's combat sys
 - 🧠 Brainrot characters from the internet
 - 🎭 Character abilities and stats
 - 🖥️ Brotdex (Brotmon Codex)
+- 🌓 Light/dark theme support
 
 ## Todo
 
 - ⚡ Optimized performance
-- 🌓 Light/dark theme support
 - 📱 Mobile-friendly gameplay
 - 💾 Account support
 
@@ -40,20 +40,46 @@ git clone https://github.com/your-username/brotmon.git
 
 ```bash
 cd brotmon
-npm install
+yarn
 ```
 
 1. Start the development server:
 
 ```bash
-npm run dev
+yarn dev
 ```
 
 1. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### ⚡ Running Supabase
 
+1. Install Docker Desktop from [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
 
+1. Install Supabase CLI:
+
+```bash
+yarn add supabase --dev
+```
+
+1. Start Supabase services:
+
+```bash
+npx supabase start
+```
+
+1. Apply migrations and seed the database:
+
+```bash
+npx supabase db reset
+```
+
+1. Generate TypeScript types from your database schema:
+
+```bash
+yarn gen-types
+```
+
+The Supabase Studio will be available at [http://localhost:54323](http://localhost:54323)
 
 ## 📦 Project Structure
 
