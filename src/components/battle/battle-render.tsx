@@ -1,9 +1,11 @@
-import { RoleBattle } from "@/hooks/use-battle-connection";
-import { StatusEffect, StatusEffectEnum } from "@/types/old/move.type";
+import { BattleingBrotmons } from "@/hooks/use-battle-connection";
+import { StatusEffect, StatusEffectEnum } from "@/types/status-effect.type";
+import { Card, CardContent } from "../ui/card";
 import { Progress } from "../ui/progress";
+import { Spinner } from "../ui/spinner";
 
 type BattleRenderProps = {
-  battle: RoleBattle;
+  battleingBrotmons: BattleingBrotmons;
 };
 
 const getHealth = (base: number, current: number) => {
@@ -31,17 +33,12 @@ const EffectsList = ({ effects }: { effects: StatusEffect[] }) => {
   return (
     <div className="flex w-1/2 flex-wrap items-center gap-1">
       {effects.map((effect, index) => {
-        if (
-          effect.type === StatusEffectEnum.BUFF ||
-          effect.type === StatusEffectEnum.DEBUFF
-        ) {
+        if (effect.type === StatusEffectEnum.BUFF || effect.type === StatusEffectEnum.DEBUFF) {
           return Object.entries(effect.modifiers || {}).map(([stat, value]) => (
             <div
               key={`${effect.name}-${stat}-${index}`}
               className={`rounded px-2 py-1 text-sm ${
-                value > 0
-                  ? "bg-green-200 text-green-800"
-                  : "bg-red-200 text-red-800"
+                value > 0 ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"
               }`}
             >
               {stat.slice(0, 3)} {value > 0 ? "+" : ""}
@@ -63,38 +60,43 @@ const EffectsList = ({ effects }: { effects: StatusEffect[] }) => {
   );
 };
 
-export function BattleRender({ battle }: BattleRenderProps) {
-  const trainer = battle.trainers[battle.role]!;
-  const opponent = battle.trainers[1 - battle.role]!;
-
-  const tBrotmon = trainer.brotmons[0];
-  const oBrotmon = opponent.brotmons[0];
+export function BattleRender({ battleingBrotmons: { trainer, opponent } }: BattleRenderProps) {
+  if (!trainer || !opponent)
+    return (
+      <div className="flex h-full w-full">
+        <Spinner className="m-auto" />
+      </div>
+    );
 
   return (
-    <div className="grid h-full w-full grid-rows-2">
-      {/* OPPONENT BROTMON */}
-      <div className="flex flex-col items-end justify-center">
-        <div className="w-1/2 text-start font-medium">{oBrotmon.name}</div>
-        <div className="flex w-1/2 items-center gap-2">
-          <Progress value={getHealth(oBrotmon.max_hp, oBrotmon.current_hp)} />
-          <div>
-            {oBrotmon.current_hp} / {oBrotmon.max_hp} HP
+    <Card>
+      <CardContent>
+        <div className="grid h-full w-full grid-rows-2">
+          {/* OPPONENT BROTMON */}
+          <div className="flex flex-col items-end justify-center">
+            <div className="w-1/2 text-start font-medium">{opponent.base.name}</div>
+            <div className="flex w-1/2 items-center gap-2">
+              <Progress value={getHealth(opponent.base.hp, opponent.current_hp)} />
+              <div>
+                {opponent.current_hp} / {opponent.base.hp} HP
+              </div>
+            </div>
+            <EffectsList effects={opponent.effects as StatusEffect[]} />
           </div>
-        </div>
-        <EffectsList effects={oBrotmon.effects} />
-      </div>
 
-      {/* TRAINER BROTMON */}
-      <div className="flex flex-col items-start justify-center">
-        <div className="w-1/2 text-start font-medium">{tBrotmon.name}</div>
-        <div className="flex w-1/2 items-center gap-2">
-          <Progress value={getHealth(tBrotmon.max_hp, tBrotmon.current_hp)} />
-          <div>
-            {tBrotmon.current_hp} / {tBrotmon.max_hp} HP
+          {/* TRAINER BROTMON */}
+          <div className="flex flex-col items-start justify-center">
+            <div className="w-1/2 text-start font-medium">{trainer.base.name}</div>
+            <div className="flex w-1/2 items-center gap-2">
+              <Progress value={getHealth(trainer.base.hp, trainer.current_hp)} />
+              <div>
+                {trainer.current_hp} / {trainer.base.hp} HP
+              </div>
+            </div>
+            <EffectsList effects={trainer.effects as StatusEffect[]} />
           </div>
         </div>
-        <EffectsList effects={tBrotmon.effects} />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

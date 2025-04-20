@@ -1,10 +1,7 @@
 "use client";
 
 import { BrotmonItem } from "@/components/teambuilder/brotmon-selector";
-import {
-  Teambuilder,
-  TeambuilderData,
-} from "@/components/teambuilder/teambuilder";
+import { Teambuilder, TeambuilderData } from "@/components/teambuilder/teambuilder";
 import { httpClient } from "@/lib/http-client";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
@@ -20,12 +17,10 @@ export default function Homepage({ brotmons }: HomepageProps) {
         trainer: data,
       });
 
-      if (response.status !== 200)
-        throw new AxiosError("Error creating battle", "400");
+      if (response.status !== 200) throw new AxiosError("Error creating battle", "400");
 
-      const { battleId } = response.data;
-
-      router.push(`/battle/${battleId}`);
+      const { battle_id } = response.data;
+      router.push(`/battle/${battle_id}`);
     } catch (e) {
       const error = e as AxiosError<{ error: string }>;
       toast.error(error.response?.data?.error ?? error.message);
