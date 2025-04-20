@@ -1,13 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import { BattlePage } from "@/pages/battle-page";
+import BattlePage from "@/pages/battle-page";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ battle_id: string }>;
-}) {
+export default async function Page({ params }: { params: Promise<{ battle_id: string }> }) {
   const supabase = await createClient();
   const cookieStore = await cookies();
   const trainer_id = cookieStore.get("trainer_id")?.value;

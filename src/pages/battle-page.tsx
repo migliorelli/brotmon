@@ -15,7 +15,7 @@ type BattlePageProps = {
   trainer_id: string;
 };
 
-export function BattlePage({ battle_id, trainer_id }: BattlePageProps) {
+export default function BattlePage({ battle_id, trainer_id }: BattlePageProps) {
   const { battle, connected, messages, sendMessage, performAction, error } = useBattleConnection(
     battle_id,
     trainer_id,

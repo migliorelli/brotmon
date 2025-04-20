@@ -15,7 +15,7 @@ type JoinBattlePageProps = {
   battle_id: string;
 };
 
-export function JoinBattlePage({ brotmons, battle_id }: JoinBattlePageProps) {
+export default function JoinBattlePage({ brotmons, battle_id }: JoinBattlePageProps) {
   const router = useRouter();
 
   const handleJoinBattle = async (data: TeambuilderData) => {
