@@ -29,7 +29,7 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 
 - Use clear and meaningful commit messages
 - Start with a verb in the present tense
-- Keep the first line under 70 characters
+- Keep the first line around 100 characters
 - Reference issues and pull requests when relevant
 
 Example:
