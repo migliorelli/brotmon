@@ -187,7 +187,7 @@ export function useBattleConnection(
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error occurred");
     }
-  }, [battle_id, trainer_id, supabase]);
+  }, [battle_id, trainer_id, supabase, battleState]);
 
   // supabase subscriptions
   const setupSubscriptions = useCallback(() => {
@@ -305,7 +305,12 @@ export function useBattleConnection(
     // battle logs
     newChannel.on<Tables<"battle_logs">>(
       "postgres_changes",
-      { event: "INSERT", schema: "public", table: "battle_logs", filter: `battle_id=eq.${battle_id}` },
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "battle_logs",
+        filter: `battle_id=eq.${battle_id}`,
+      },
       async () => {
         try {
           const { data, error } = await supabase
