@@ -16,7 +16,7 @@ export type InterruptiveEffectHandler = (
 export class StatusEffectHandler {
   private battleUtils = new BattleUtils();
 
-  // @ts-ignore
+  // @ts-expect-error
   private handlers: Record<StatusEffectEnum, InterruptiveEffectHandler> = {
     [StatusEffectEnum.PARALYZE]: (
       brotmon: TurnBrotmon,
