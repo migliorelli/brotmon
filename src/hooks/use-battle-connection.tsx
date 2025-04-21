@@ -3,9 +3,14 @@
 import { httpClient } from "@/lib/http-client";
 import { createClient } from "@/lib/supabase/client";
 import { BattleActionPayload } from "@/types/battle-service.types";
-import { Enums, Tables } from "@/types/database.types";
+import { Tables } from "@/types/database.types";
 import { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  type State as BattleState,
+  ActionType as BattleActionType,
+  useBattleReducer,
+} from "./use-battle-reducer";
 
 type Move = Tables<"moves">;
 type BrotmonMove = Tables<"brotmon_moves"> & { base: Move };
@@ -17,8 +22,8 @@ export type BattleingBrotmons = {
   opponent: BattleingBrotmon | null;
 };
 
-type Trainer = Tables<"trainers"> & { brotmons: Brotmon[] };
-
+export type Trainer = Tables<"trainers"> & { brotmons: Brotmon[] };
+export type Opponent = Tables<"trainers">;
 export type Log = Tables<"battle_logs"> & { turn: { turn: number } };
 
 export type Message = {
@@ -27,78 +32,6 @@ export type Message = {
   content: string;
   created_at: string;
 };
-
-enum BattleActionType {
-  SET_TRAINER = "SET_TRAINER",
-  SET_OPPONENT = "SET_OPPONENT",
-  SET_BATTLEING_BROTMONS = "SET_BATTLEING_BROTMONS",
-  SET_BATTLE_STATE = "SET_BATTLE_STATE",
-  SET_WINNER = "SET_WINNER",
-  SET_LOGS = "SET_LOGS",
-}
-
-type BattleReducerAction =
-  | {
-      type: BattleActionType.SET_TRAINER;
-      payload: Trainer | null;
-    }
-  | {
-      type: BattleActionType.SET_OPPONENT;
-      payload: Trainer | null;
-    }
-  | {
-      type: BattleActionType.SET_BATTLEING_BROTMONS;
-      payload: BattleingBrotmons;
-    }
-  | {
-      type: BattleActionType.SET_BATTLE_STATE;
-      payload: Enums<"battle_state">;
-    }
-  | {
-      type: BattleActionType.SET_WINNER;
-      payload: string | null;
-    }
-  | {
-      type: BattleActionType.SET_LOGS;
-      payload: Log[];
-    };
-
-type BattleState = {
-  trainer: Trainer | null;
-  opponent: Trainer | null;
-  battleingBrotmons: BattleingBrotmons;
-  battleState: Enums<"battle_state">;
-  winner: string | null;
-  logs: Log[];
-};
-
-const initialState: BattleState = {
-  trainer: null,
-  opponent: null,
-  winner: null,
-  battleingBrotmons: { trainer: null, opponent: null },
-  battleState: "WAITING",
-  logs: [],
-};
-
-function battleReducer(state: BattleState, action: BattleReducerAction): BattleState {
-  switch (action.type) {
-    case BattleActionType.SET_TRAINER:
-      return { ...state, trainer: action.payload };
-    case BattleActionType.SET_OPPONENT:
-      return { ...state, opponent: action.payload };
-    case BattleActionType.SET_BATTLEING_BROTMONS:
-      return { ...state, battleingBrotmons: action.payload };
-    case BattleActionType.SET_WINNER:
-      return { ...state, winner: action.payload };
-    case BattleActionType.SET_BATTLE_STATE:
-      return { ...state, battleState: action.payload };
-    case BattleActionType.SET_LOGS:
-      return { ...state, logs: action.payload };
-    default:
-      return state;
-  }
-}
 
 type UseBattleConnectionReturn = {
   battle: BattleState;
@@ -114,7 +47,7 @@ export function useBattleConnection(
   trainer_id: string,
 ): UseBattleConnectionReturn {
   const supabase = createClient();
-  const [battleState, dispatch] = useReducer(battleReducer, initialState);
+  const [battleState, dispatch] = useBattleReducer();
   const [messages, setMessages] = useState<Message[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
@@ -166,6 +99,7 @@ export function useBattleConnection(
       const trainer = isHost ? battle.host : battle.guest;
       const opponent = isHost ? battle.guest : battle.host;
 
+      dispatch({ type: BattleActionType.SET_IS_HOST, payload: isHost });
       dispatch({ type: BattleActionType.SET_TRAINER, payload: trainer });
       dispatch({ type: BattleActionType.SET_OPPONENT, payload: opponent });
       dispatch({ type: BattleActionType.SET_BATTLE_STATE, payload: battle.state });
@@ -174,7 +108,7 @@ export function useBattleConnection(
       if (actions.length > 0) {
         const trainerBrotmon = actions.find((a) => a.trainer_id === trainer_id)?.brotmon_id;
         const opponentBrotmon = actions.find((a) => a.trainer_id !== trainer_id)?.brotmon_id;
-
+        
         dispatch({
           type: BattleActionType.SET_BATTLEING_BROTMONS,
           payload: {
@@ -187,8 +121,9 @@ export function useBattleConnection(
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error occurred");
     }
+    console.log(JSON.stringify(battleState, null, 2));
   }, [battle_id, trainer_id, supabase, battleState]);
-
+  
   // supabase subscriptions
   const setupSubscriptions = useCallback(() => {
     const newChannel = supabase.channel(`battle_${battle_id}`);
