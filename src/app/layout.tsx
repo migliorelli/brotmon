@@ -1,22 +1,14 @@
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/contexts/theme-provider";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Funnel_Sans } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
+const font = Funnel_Sans({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Brotmon",
-  description: "A Pokemon Showdown like Brainrot game!",
+  description:
+    "A realtime turn-based battle game inspired by Pokémon's combat system, featuring Brainrot characters.",
   authors: {
     name: "Miguel Migliorelli Bringhenti",
     url: "https://migliorelli.dev",
@@ -30,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${font.className} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
