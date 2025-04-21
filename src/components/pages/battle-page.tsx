@@ -77,7 +77,7 @@ export function BattlePage({ battle_id, trainer_id }: BattlePageProps) {
             <BattleControls
               battleingBrotmon={battle.battleingBrotmons.trainer!}
               canMove={battle.canMove}
-              brotmons={battle.trainer?.brotmons!}
+              brotmons={battle.trainer!.brotmons!}
               performAction={performAction}
             />
           </CardContent>
