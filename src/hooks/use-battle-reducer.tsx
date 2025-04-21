@@ -10,6 +10,7 @@ export enum ActionType {
   SET_WINNER = "SET_WINNER",
   SET_LOGS = "SET_LOGS",
   SET_IS_HOST = "SET_IS_HOST",
+  SET_TURN = "SET_TURN",
 }
 
 type ReducerAction =
@@ -40,6 +41,10 @@ type ReducerAction =
   | {
       type: ActionType.SET_IS_HOST;
       payload: boolean;
+    }
+  | {
+      type: ActionType.SET_TURN;
+      payload: number;
     };
 
 export type State = {
@@ -50,6 +55,7 @@ export type State = {
   winner: string | null;
   logs: Log[];
   isHost: boolean;
+  turn: number;
 };
 
 const initialState: State = {
@@ -60,6 +66,7 @@ const initialState: State = {
   battleState: "WAITING",
   logs: [],
   isHost: false,
+  turn: 0,
 };
 
 function battleReducer(state: State, action: ReducerAction): State {
@@ -78,6 +85,8 @@ function battleReducer(state: State, action: ReducerAction): State {
       return { ...state, logs: action.payload };
     case ActionType.SET_IS_HOST:
       return { ...state, isHost: action.payload };
+    case ActionType.SET_TURN:
+      return { ...state, turn: action.payload };
     default:
       return state;
   }

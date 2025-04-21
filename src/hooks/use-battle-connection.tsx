@@ -108,7 +108,7 @@ export function useBattleConnection(
       if (actions.length > 0) {
         const trainerBrotmon = actions.find((a) => a.trainer_id === trainer_id)?.brotmon_id;
         const opponentBrotmon = actions.find((a) => a.trainer_id !== trainer_id)?.brotmon_id;
-        
+
         dispatch({
           type: BattleActionType.SET_BATTLEING_BROTMONS,
           payload: {
@@ -123,7 +123,7 @@ export function useBattleConnection(
     }
     console.log(JSON.stringify(battleState, null, 2));
   }, [battle_id, trainer_id, supabase, battleState]);
-  
+
   // supabase subscriptions
   const setupSubscriptions = useCallback(() => {
     const newChannel = supabase.channel(`battle_${battle_id}`);
@@ -255,10 +255,24 @@ export function useBattleConnection(
             .order("created_at", { ascending: true });
 
           if (error) throw error;
-          if (data) dispatch({ type: BattleActionType.SET_LOGS, payload: data });
+          dispatch({ type: BattleActionType.SET_LOGS, payload: data });
         } catch (err) {
           setError(err instanceof Error ? err.message : "Failed to update battle logs");
         }
+      },
+    );
+
+    // battle turns
+    newChannel.on<Tables<"battle_turns">>(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "battle_logs",
+        filter: `battle_id=eq.${battle_id}`,
+      },
+      async (e) => {
+        dispatch({ type: BattleActionType.SET_TURN, payload: e.new.turn });
       },
     );
 
