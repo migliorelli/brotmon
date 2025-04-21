@@ -13,10 +13,10 @@ import {
 } from "./use-battle-reducer";
 
 type Move = Tables<"moves">;
-type BrotmonMove = Tables<"brotmon_moves"> & { base: Move };
+export type BrotmonMove = Tables<"brotmon_moves"> & { base: Move };
 
-type Brotmon = Tables<"trainer_brotmons"> & { base: Tables<"brotmons"> };
-type BattleingBrotmon = Brotmon & { moves: BrotmonMove[] };
+export type Brotmon = Tables<"trainer_brotmons"> & { base: Tables<"brotmons"> };
+export type BattleingBrotmon = Brotmon & { moves: BrotmonMove[] };
 export type BattleingBrotmons = {
   trainer: BattleingBrotmon | null;
   opponent: BattleingBrotmon | null;
@@ -52,6 +52,39 @@ export function useBattleConnection(
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // fetch logs
+  const fetchLogs = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("battle_logs")
+        .select("*, turn:battle_turns!turn_id(turn)")
+        .eq("battle_id", battle_id)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      dispatch({ type: BattleActionType.SET_LOGS, payload: data });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update battle logs");
+    }
+  }, []);
+
+  // fetch turn
+  const fetchTurn = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("battle_turns")
+        .select("turn")
+        .eq("battle_id", battle_id)
+        .eq("done", false)
+        .single();
+
+      if (error) throw error;
+      dispatch({ type: BattleActionType.SET_TURN, payload: data.turn });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update battle logs");
+    }
+  }, []);
 
   // fetch initial data
   const fetchBattleData = useCallback(async () => {
@@ -106,9 +139,14 @@ export function useBattleConnection(
       dispatch({ type: BattleActionType.SET_WINNER, payload: battle.winner_id });
 
       if (actions.length > 0) {
-        const trainerBrotmon = actions.find((a) => a.trainer_id === trainer_id)?.brotmon_id;
-        const opponentBrotmon = actions.find((a) => a.trainer_id !== trainer_id)?.brotmon_id;
+        const trainerAction = actions.find((a) => a.trainer_id === trainer_id);
+        const opponentAction = actions.find((a) => a.trainer_id !== trainer_id);
 
+        const canMove = trainerAction?.action === null;
+        const trainerBrotmon = trainerAction?.brotmon_id;
+        const opponentBrotmon = opponentAction?.brotmon_id;
+
+        dispatch({ type: BattleActionType.SET_CAN_MOVE, payload: canMove });
         dispatch({
           type: BattleActionType.SET_BATTLEING_BROTMONS,
           payload: {
@@ -116,13 +154,11 @@ export function useBattleConnection(
             opponent: opponent?.brotmons.find((b) => b.id === opponentBrotmon) || null,
           },
         });
-        console.log(battleState);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error occurred");
     }
-    console.log(JSON.stringify(battleState, null, 2));
-  }, [battle_id, trainer_id, supabase, battleState]);
+  }, [battle_id, trainer_id, supabase]);
 
   // supabase subscriptions
   const setupSubscriptions = useCallback(() => {
@@ -198,13 +234,12 @@ export function useBattleConnection(
         table: "battle_actions",
         filter: `battle_id=eq.${battle_id}`,
       },
-      async (e) => {
-        if (e.eventType === "INSERT" || e.eventType === "UPDATE") {
-          try {
-            const { data: actions, error } = await supabase
-              .from("battle_actions")
-              .select(
-                `
+      async () => {
+        try {
+          const { data: actions, error } = await supabase
+            .from("battle_actions")
+            .select(
+              `
                 *, 
                 brotmon:trainer_brotmons!brotmon_id(
                   *, 
@@ -213,26 +248,27 @@ export function useBattleConnection(
                     *, base:moves!move_id(*)
                   )
                 )
-                `,
-              )
-              .eq("battle_id", battle_id)
-              .limit(2);
+              `,
+            )
+            .eq("battle_id", battle_id);
 
-            if (error) throw error;
+          if (error) throw error;
 
-            const trainerAction = actions.find((a) => a.trainer_id === trainer_id);
-            const opponentAction = actions.find((a) => a.trainer_id !== trainer_id);
+          const trainerAction = actions.find((a) => a.trainer_id === trainer_id);
+          const opponentAction = actions.find((a) => a.trainer_id !== trainer_id);
 
-            dispatch({
-              type: BattleActionType.SET_BATTLEING_BROTMONS,
-              payload: {
-                trainer: trainerAction?.brotmon || null,
-                opponent: opponentAction?.brotmon || null,
-              },
-            });
-          } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to update battle actions");
-          }
+          const canMove = trainerAction?.action === null;
+          dispatch({ type: BattleActionType.SET_CAN_MOVE, payload: canMove });
+          console.log(trainerAction);
+          dispatch({
+            type: BattleActionType.SET_BATTLEING_BROTMONS,
+            payload: {
+              trainer: trainerAction?.brotmon || null,
+              opponent: opponentAction?.brotmon || null,
+            },
+          });
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Failed to update battle actions");
         }
       },
     );
@@ -241,25 +277,12 @@ export function useBattleConnection(
     newChannel.on<Tables<"battle_logs">>(
       "postgres_changes",
       {
-        event: "INSERT",
+        event: "*",
         schema: "public",
         table: "battle_logs",
         filter: `battle_id=eq.${battle_id}`,
       },
-      async () => {
-        try {
-          const { data, error } = await supabase
-            .from("battle_logs")
-            .select("*, turn:battle_turns!turn_id(turn)")
-            .eq("battle_id", battle_id)
-            .order("created_at", { ascending: true });
-
-          if (error) throw error;
-          dispatch({ type: BattleActionType.SET_LOGS, payload: data });
-        } catch (err) {
-          setError(err instanceof Error ? err.message : "Failed to update battle logs");
-        }
-      },
+      fetchLogs,
     );
 
     // battle turns
@@ -287,11 +310,13 @@ export function useBattleConnection(
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [battle_id, trainer_id, supabase, battleState.battleState]);
+  }, [battle_id, trainer_id, supabase]);
 
   useEffect(() => {
     fetchBattleData();
-  }, [fetchBattleData]);
+    fetchLogs();
+    fetchTurn();
+  }, []);
 
   useEffect(() => {
     setupSubscriptions();
@@ -312,6 +337,8 @@ export function useBattleConnection(
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to perform action");
+      } finally {
+        dispatch({ type: BattleActionType.SET_CAN_MOVE, payload: false });
       }
     },
     [battle_id],

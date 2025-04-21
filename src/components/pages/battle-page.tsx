@@ -1,14 +1,13 @@
 "use client";
 
-import { BattleLog } from "@/components/battle/battle-log";
+import { BattleLogs } from "@/components/battle/battle-logs";
 import { BattleRender } from "@/components/battle/battle-render";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { useBattleConnection } from "@/hooks/use-battle-connection";
 import { BattleAction } from "@/types/battle-service.types";
+import { BattleControls } from "../battle/battle-controls";
 
 type BattlePageProps = {
   battle_id: string;
@@ -23,107 +22,69 @@ export function BattlePage({ battle_id, trainer_id }: BattlePageProps) {
 
   if (!connected)
     return (
-      <div>
+      <div className="m-auto">
         <Spinner />
+        <p>Connecting</p>
       </div>
     );
 
   if (error) return <div>{error}</div>;
 
+  const isWaiting = battle.battleState === "WAITING";
+  const isReady = battle.battleState === "READY";
+
+  const isBatteling =
+    battle.battleState === "BATTLEING" &&
+    battle.trainer !== null &&
+    battle.opponent !== null &&
+    battle.battleingBrotmons.trainer !== null &&
+    battle.battleingBrotmons.opponent !== null;
+
   return (
-    <div className="container mx-auto grid grid-cols-2 gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Chat</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="max-h-[150px] overflow-y-auto">
-            {messages.map((m) => (
-              <p key={m.id}>
-                {m.username}: {m.content}
-              </p>
-            ))}
-          </ScrollArea>
-        </CardContent>
-        <CardFooter>
-          <form
-            className="w-full"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const message = formData.get("mi") as string;
-              if (message.length > 0) {
-                sendMessage(battle.trainer?.username || "user", message);
-                e.currentTarget.reset();
-              }
-            }}
+    <div className="container p-4 mx-auto grid grid-cols-3 flex-1 gap-4">
+      {isWaiting && (
+        <div className="col-span-2 m-auto">
+          <p>Waiting for guest...</p>
+          <Button
+            variant="outline"
+            onClick={() =>
+              navigator.clipboard.writeText(window.location.origin + `/battle/join/${battle_id}`)
+            }
           >
-            <Input name="mi" />
-          </form>
-        </CardFooter>
-      </Card>
-
-      <BattleLog logs={battle.logs} />
-
-      {battle.battleState === "WAITING" && (
-        <div className="w-full">
-          <div>Waiting for guest...</div>
-        </div>
-      )}
-
-      {battle.battleState === "READY" && (
-        <div className="w-full">
-          <Button variant="outline" onClick={() => performAction({ action: BattleAction.START })}>
-            Start battle
+            Copy invite
           </Button>
         </div>
       )}
 
-      {battle.battleState === "BATTLEING" && (
-        <>
-          {/* BATTLE RENDER SECTION */}
-          <div className="col-span-2">
-            <BattleRender battleingBrotmons={battle.battleingBrotmons} />
-          </div>
-
-          {/* TEAM MANAGEMENT SECTION */}
-          <Card className="col-span-2 row-span-1 flex flex-col">
-            <CardContent>
-              {/* TRAINER BROTMONS */}
-              <p className="mb-2">Your Brotmons</p>
-              <div className="flex w-full items-center gap-4">
-                {battle?.trainer?.brotmons.map((brotmon) => (
-                  <Button
-                    key={brotmon.id}
-                    disabled={brotmon.id === battle.battleingBrotmons.trainer?.id}
-                    onClick={() =>
-                      performAction({ action: BattleAction.SWITCH, brotmon_id: brotmon.id })
-                    }
-                    variant="outline"
-                  >
-                    {brotmon.base.name}
-                  </Button>
-                ))}
-              </div>
-
-              {/* BROTMON MOVES */}
-              <p className="mt-4 mb-2">Your Moves</p>
-              <div className="grid grid-cols-4 gap-4">
-                {battle.battleingBrotmons.trainer?.moves.map((move) => (
-                  <Button
-                    key={move.id}
-                    onClick={() => performAction({ action: BattleAction.MOVE, move_id: move.id })}
-                    variant="outline"
-                    disabled={move.current_uses <= 0}
-                  >
-                    {move.base.name}
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </>
+      {isReady && (
+        <div className="col-span-2 m-auto">
+          <p>The battle is ready to start</p>
+          {battle.isHost && (
+            <Button variant="outline" onClick={() => performAction({ action: BattleAction.START })}>
+              Start battle
+            </Button>
+          )}
+        </div>
       )}
+
+      {isBatteling && (
+        <Card className="col-span-2">
+          <CardHeader>
+            <CardTitle>Turn {battle.turn}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BattleRender battleingBrotmons={battle.battleingBrotmons} />
+            <BattleControls
+              battleingBrotmon={battle.battleingBrotmons.trainer!}
+              canMove={battle.canMove}
+              brotmons={battle.trainer?.brotmons!}
+              performAction={performAction}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      <BattleLogs logs={battle.logs} />
     </div>
   );
 }

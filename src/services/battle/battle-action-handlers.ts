@@ -132,24 +132,19 @@ export class BattleActionHandlers {
     }
 
     try {
-      const { data: trainer, error: brotmonsError } = await this.supabase
-        .from("trainers")
+      const { data: brotmons, error: brotmonsError } = await this.supabase
+        .from("trainer_brotmons")
         .select(
           `
-            id, username,
-            actions:battle_actions!trainer_id(id),
-            brotmons:trainer_brotmons!trainer_id(
-              id, current_hp,
-              base:brotmons!brotmon_id(
-                id, name
-              )
-            )`,
+        id, current_hp, created_at,
+        trainer:trainers!trainer_id(id, username),
+        base:brotmons!brotmon_id(id, name)
+      `,
         )
-        .eq("id", trainer_id)
-        .filter("brotmons.current_hp", "gt", 0)
-        .limit(1)
-        .order("brotmons.created_at", { ascending: true })
-        .single();
+        .eq("trainer_id", trainer_id)
+        .gt("current_hp", 0)
+        .order("created_at", { ascending: true })
+        .limit(1);
 
       if (brotmonsError) {
         console.error(`[BattleActionHandlers] Error auto-switching brotmon:`, {
@@ -157,27 +152,26 @@ export class BattleActionHandlers {
           error: brotmonsError.message,
         });
         return { error: brotmonsError.message };
-      } else if (!trainer.brotmons || trainer.brotmons.length === 0) {
+      } else if (!brotmons || brotmons.length === 0) {
         return { error: "No Brotmon alive" };
       }
 
       // update the active brotmon for the trainer's action
-      if (trainer.actions && trainer.actions.length > 0) {
-        const { error: updateError } = await this.supabase
-          .from("battle_actions")
-          .update({
-            brotmon_id: trainer.brotmons[0].id,
-          })
-          .eq("id", trainer.actions[0].id);
+      const { error: updateError } = await this.supabase
+        .from("battle_actions")
+        .update({
+          brotmon_id: brotmons[0].id,
+        })
+        .eq("trainer_id", trainer_id);
 
-        if (updateError) {
-          console.error(`[BattleActionHandlers] Error updating active brotmon:`, {
-            trainer_id,
-            brotmon_id: trainer.brotmons[0].id,
-            error: updateError.message,
-          });
-          return { error: updateError.message };
-        }
+      if (updateError) {
+        console.error(`[BattleActionHandlers] Error updating active brotmon:`, {
+          trainer_id,
+          brotmon_id: brotmons[0].id,
+          error: updateError.message,
+        });
+
+        return { error: updateError.message };
       }
 
       return { error: null };

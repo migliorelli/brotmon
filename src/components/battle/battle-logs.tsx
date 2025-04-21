@@ -12,13 +12,13 @@ type BattleLogProps = {
   logs: Log[];
 };
 
-export function BattleLog({ logs }: BattleLogProps) {
+export function BattleLogs({ logs }: BattleLogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const organizedLogs: Logs = logs.reduce((acc: Logs, next) => {
     let item = acc[next.turn.turn];
     if (item) item.logs.push(next);
-    else item = { turn: next.turn.turn, logs: [next] };
+    else acc[next.turn.turn] = { turn: next.turn.turn, logs: [next] };
 
     return acc;
   }, [] as Logs);
@@ -35,17 +35,17 @@ export function BattleLog({ logs }: BattleLogProps) {
         <CardTitle>Battle Log</CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[200px] pr-4" ref={scrollRef}>
+        <ScrollArea className="h-[400px] pr-4" ref={scrollRef}>
           {organizedLogs.map((oLogs) => (
             <div key={oLogs.turn}>
               <p className="font-medium">Turn {oLogs.turn}</p>
-              <p className="mb-1 text-sm">
+              <div className="mb-1 text-sm space-y-4">
                 {oLogs.logs.map((log) => (
                   <p key={log.id}>
-                    {new Date(log.created_at).toUTCString()} {log.message}
+                    {new Date(log.created_at).toISOString()} {log.message}
                   </p>
                 ))}
-              </p>
+              </div>
             </div>
           ))}
         </ScrollArea>

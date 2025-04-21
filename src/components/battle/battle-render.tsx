@@ -1,12 +1,6 @@
 import { BattleingBrotmons } from "@/hooks/use-battle-connection";
 import { StatusEffect, StatusEffectEnum } from "@/types/status-effect.type";
-import { Card, CardContent } from "../ui/card";
 import { Progress } from "../ui/progress";
-import { Spinner } from "../ui/spinner";
-
-type BattleRenderProps = {
-  battleingBrotmons: BattleingBrotmons;
-};
 
 const getHealth = (base: number, current: number) => {
   return (current / base) * 100;
@@ -60,43 +54,39 @@ const EffectsList = ({ effects }: { effects: StatusEffect[] }) => {
   );
 };
 
-export function BattleRender({ battleingBrotmons: { trainer, opponent } }: BattleRenderProps) {
-  if (!trainer || !opponent)
-    return (
-      <div className="flex h-full w-full">
-        <Spinner className="m-auto" />
-      </div>
-    );
+type BattleRenderProps = {
+  battleingBrotmons: BattleingBrotmons;
+};
+
+export function BattleRender({ battleingBrotmons }: BattleRenderProps) {
+  const trainer = battleingBrotmons.trainer!;
+  const opponent = battleingBrotmons.opponent!;
 
   return (
-    <Card>
-      <CardContent>
-        <div className="grid h-full w-full grid-rows-2">
-          {/* OPPONENT BROTMON */}
-          <div className="flex flex-col items-end justify-center">
-            <div className="w-1/2 text-start font-medium">{opponent.base.name}</div>
-            <div className="flex w-1/2 items-center gap-2">
-              <Progress value={getHealth(opponent.base.hp, opponent.current_hp)} />
-              <div>
-                {opponent.current_hp} / {opponent.base.hp} HP
-              </div>
-            </div>
-            <EffectsList effects={opponent.effects as StatusEffect[]} />
-          </div>
-
-          {/* TRAINER BROTMON */}
-          <div className="flex flex-col items-start justify-center">
-            <div className="w-1/2 text-start font-medium">{trainer.base.name}</div>
-            <div className="flex w-1/2 items-center gap-2">
-              <Progress value={getHealth(trainer.base.hp, trainer.current_hp)} />
-              <div>
-                {trainer.current_hp} / {trainer.base.hp} HP
-              </div>
-            </div>
-            <EffectsList effects={trainer.effects as StatusEffect[]} />
+    <div className="grid h-full w-full">
+      {/* OPPONENT BROTMON */}
+      <div className="flex flex-col items-end justify-center">
+        <div className="w-1/2 text-start font-medium">{opponent.base.name}</div>
+        <div className="flex w-1/2 items-center gap-2">
+          <Progress value={getHealth(opponent.base.hp, opponent.current_hp)} />
+          <div>
+            {opponent.current_hp} / {opponent.base.hp} HP
           </div>
         </div>
-      </CardContent>
-    </Card>
+        {opponent.effects && <EffectsList effects={opponent.effects as StatusEffect[]} />}
+      </div>
+
+      {/* TRAINER BROTMON */}
+      <div className="flex flex-col items-start justify-center">
+        <div className="w-1/2 text-start font-medium">{trainer.base.name}</div>
+        <div className="flex w-1/2 items-center gap-2">
+          <Progress value={getHealth(trainer.base.hp, trainer.current_hp)} />
+          <div>
+            {trainer.current_hp} / {trainer.base.hp} HP
+          </div>
+        </div>
+        {opponent.effects && <EffectsList effects={trainer.effects as StatusEffect[]} />}
+      </div>
+    </div>
   );
 }

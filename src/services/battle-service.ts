@@ -48,7 +48,10 @@ export class BattleService {
       console.error(`[BattleService] Exception in createTrainer:`, {
         error: err instanceof Error ? err.message : "Failed to create trainer",
       });
-      return { trainer_id: null, error: err instanceof Error ? err.message : "Failed to create trainer" };
+      return {
+        trainer_id: null,
+        error: err instanceof Error ? err.message : "Failed to create trainer",
+      };
     }
   }
 
@@ -78,7 +81,10 @@ export class BattleService {
       console.error(`[BattleService] Exception in createBattle:`, {
         error: err instanceof Error ? err.message : "Failed to create battle",
       });
-      return { battle_id: null, error: err instanceof Error ? err.message : "Failed to create battle" };
+      return {
+        battle_id: null,
+        error: err instanceof Error ? err.message : "Failed to create battle",
+      };
     }
   }
 
@@ -142,7 +148,10 @@ export class BattleService {
       console.error(`[BattleService] Exception in startBattle:`, {
         error: err instanceof Error ? err.message : "Failed to start battle",
       });
-      return { battle_id: null, error: err instanceof Error ? err.message : "Failed to start battle" };
+      return {
+        battle_id: null,
+        error: err instanceof Error ? err.message : "Failed to start battle",
+      };
     }
   }
 
@@ -174,7 +183,10 @@ export class BattleService {
       console.error(`[BattleService] Exception in getActionBattle:`, {
         error: err instanceof Error ? err.message : "Failed to get battle action",
       });
-      return { battle: null, error: err instanceof Error ? err.message : "Failed to get battle action" };
+      return {
+        battle: null,
+        error: err instanceof Error ? err.message : "Failed to get battle action",
+      };
     }
   }
 
@@ -466,7 +478,7 @@ export class BattleService {
         for (const update of updates) {
           const { error: updateAError } = await this.supabase
             .from("battle_actions")
-            .update({ action: null, target_id: null })
+            .update({ brotmon_id: update.tb_id, action: null, target_id: null })
             .eq("id", update.action_id);
 
           if (updateAError) {
