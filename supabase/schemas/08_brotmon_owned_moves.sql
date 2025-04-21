@@ -1,4 +1,4 @@
-create table brotmon_owned_moves (
+CREATE TABLE brotmon_owned_moves (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   brotmon_id uuid NOT NULL,
   move_id uuid NOT NULL,

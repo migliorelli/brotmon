@@ -318,6 +318,11 @@ BEGIN
     FROM battle_turns
     WHERE battle_id = p_battle_id AND turn = 0;
 
+    -- update battle_turn 0
+    UPDATE battle_turns
+    SET done = true
+    WHERE battle_id = p_battle_id AND turn = 0;
+
     -- create battle_turn 1
     INSERT INTO battle_turns (battle_id, host_action_id, guest_action_id, turn, done)
     VALUES (p_battle_id, v_host_action_id, v_guest_action_id, 1, false)
@@ -333,5 +338,32 @@ BEGIN
 EXCEPTION 
     WHEN OTHERS THEN 
         RAISE EXCEPTION 'Error starting battle: % (SQLSTATE: %)', sqlerrm, sqlstate;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION delete_old_battles()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    CREATE TEMPORARY TABLE trainers_to_delete (id uuid);
+
+    INSERT INTO old_trainers_to_delete
+    SELECT host_id FROM battles WHERE created_at < NOW() - INTERVAL '1 day'
+    UNION
+    SELECT guest_id FROM battles WHERE created_at < NOW() - INTERVAL '1 day';
+
+    DELETE FROM battles WHERE created_at < NOW() - INTERVAL '1 day';
+
+    DELETE FROM trainers WHERE id IN (
+        SELECT id FROM old_trainers_to_delete
+        EXCEPT
+        SELECT host_id FROM battles
+        EXCEPT
+        SELECT guest_id FROM battles
+    );
+
+    DROP TABLE trainers_to_delete;
 END;
 $$;

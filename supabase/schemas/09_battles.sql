@@ -13,3 +13,9 @@ CREATE TABLE battles (
   CONSTRAINT battles_host_id_fkey FOREIGN KEY (host_id) REFERENCES trainers(id),
   CONSTRAINT battles_winner_id_fkey FOREIGN KEY (winner_id) REFERENCES trainers(id)
 );
+
+SELECT cron.schedule(
+  'delete_battle_after_one_day',
+  '0 0 * * *',
+  $$ SELECT public.delete_old_battles(); $$
+);
