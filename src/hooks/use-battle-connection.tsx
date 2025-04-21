@@ -67,7 +67,7 @@ export function useBattleConnection(
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update battle logs");
     }
-  }, []);
+  }, [battle_id, supabase, dispatch]);
 
   // fetch turn
   const fetchTurn = useCallback(async () => {
@@ -84,7 +84,7 @@ export function useBattleConnection(
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update battle logs");
     }
-  }, []);
+  }, [battle_id, supabase, dispatch]);
 
   // fetch initial data
   const fetchBattleData = useCallback(async () => {
@@ -158,7 +158,7 @@ export function useBattleConnection(
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error occurred");
     }
-  }, [battle_id, trainer_id, supabase]);
+  }, [battle_id, trainer_id, supabase, dispatch]);
 
   // supabase subscriptions
   const setupSubscriptions = useCallback(() => {
@@ -310,13 +310,13 @@ export function useBattleConnection(
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [battle_id, trainer_id, supabase]);
+  }, [battle_id, trainer_id, supabase, dispatch, battleState.battleState, fetchLogs]);
 
   useEffect(() => {
     fetchBattleData();
     fetchLogs();
     fetchTurn();
-  }, []);
+  }, [fetchBattleData, fetchLogs, fetchTurn]);
 
   useEffect(() => {
     setupSubscriptions();
@@ -341,7 +341,7 @@ export function useBattleConnection(
         dispatch({ type: BattleActionType.SET_CAN_MOVE, payload: false });
       }
     },
-    [battle_id],
+    [battle_id, dispatch],
   );
 
   const sendMessage = useCallback(
