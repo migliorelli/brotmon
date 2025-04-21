@@ -15,7 +15,7 @@ type BattlePageProps = {
 };
 
 export function BattlePage({ battle_id, trainer_id }: BattlePageProps) {
-  const { battle, connected, messages, sendMessage, performAction, error } = useBattleConnection(
+  const { battle, connected, performAction, error } = useBattleConnection(
     battle_id,
     trainer_id,
   );

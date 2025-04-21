@@ -16,7 +16,7 @@ export function BattleLogs({ logs }: BattleLogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const organizedLogs: Logs = logs.reduce((acc: Logs, next) => {
-    let item = acc[next.turn.turn];
+    const item = acc[next.turn.turn];
     if (item) item.logs.push(next);
     else acc[next.turn.turn] = { turn: next.turn.turn, logs: [next] };
 
