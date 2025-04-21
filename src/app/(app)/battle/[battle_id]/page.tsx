@@ -1,5 +1,5 @@
+import { BattlePage } from "@/components/pages/battle-page";
 import { createClient } from "@/lib/supabase/server";
-import BattlePage from "@/pages/battle-page";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 

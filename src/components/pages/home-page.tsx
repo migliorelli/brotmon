@@ -7,8 +7,8 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-type HomepageProps = { brotmons: BrotmonItem[] };
-export default function Homepage({ brotmons }: HomepageProps) {
+type HomePageProps = { brotmons: BrotmonItem[] };
+export function HomePage({ brotmons }: HomePageProps) {
   const router = useRouter();
 
   const handleCreateBattle = async (data: TeambuilderData) => {

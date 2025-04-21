@@ -1,5 +1,5 @@
+import { HomePage } from "@/components/pages/home-page";
 import { createClient } from "@/lib/supabase/server";
-import Homepage from "@/pages/home-page";
 
 export default async function Page() {
   const supabase = await createClient();
@@ -10,5 +10,5 @@ export default async function Page() {
     throw new Error(error.message);
   }
 
-  return <Homepage brotmons={brotmons} />;
+  return <HomePage brotmons={brotmons} />;
 }

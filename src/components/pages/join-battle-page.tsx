@@ -1,10 +1,7 @@
 "use client";
 
 import { BrotmonItem } from "@/components/teambuilder/brotmon-selector";
-import {
-  Teambuilder,
-  TeambuilderData,
-} from "@/components/teambuilder/teambuilder";
+import { Teambuilder, TeambuilderData } from "@/components/teambuilder/teambuilder";
 import { httpClient } from "@/lib/http-client";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
@@ -15,7 +12,7 @@ type JoinBattlePageProps = {
   battle_id: string;
 };
 
-export default function JoinBattlePage({ brotmons, battle_id }: JoinBattlePageProps) {
+export function JoinBattlePage({ brotmons, battle_id }: JoinBattlePageProps) {
   const router = useRouter();
 
   const handleJoinBattle = async (data: TeambuilderData) => {
@@ -24,8 +21,7 @@ export default function JoinBattlePage({ brotmons, battle_id }: JoinBattlePagePr
         trainer: data,
       });
 
-      if (response.status !== 200)
-        throw new AxiosError("Error joining battle", "400");
+      if (response.status !== 200) throw new AxiosError("Error joining battle", "400");
 
       router.push(`/battle/${battle_id}/`);
     } catch (e) {

@@ -1,5 +1,5 @@
+import { JoinBattlePage } from "@/components/pages/join-battle-page";
 import { createClient } from "@/lib/supabase/server";
-import JoinBattlePage from "@/pages/join-battle-page";
 
 export default async function Page({ params }: { params: Promise<{ battle_id: string }> }) {
   const { battle_id } = await params;
