@@ -299,21 +299,9 @@ export class BattleTurnHandler {
           let damageMessage = `${attackerBrotmon.base.name} used ${move.base.name} on ${targetBrotmon.base.name} and dealt ${damage} damage!`;
           if (isCritical) damageMessage += " Critical hit!";
           logs.push(damageMessage);
-        } else if (move.base.type === "STATUS") {
-          const { brotmon, logs: statusLogs } =
-            this.statusEffectHandler.processStatusEffect(targetBrotmon);
-          actions[targetIndex].brotmon = brotmon;
-
-          logs.push(
-            `${attackerBrotmon.base.name} used ${move.base.name} on ${targetBrotmon.base.name}!`,
-          );
-
-          for (const log of statusLogs) {
-            logs.push(log);
-          }
         }
 
-        // Apply status effects if the move has them and passes chance check
+        // apply status effects if the move has them and passes chance check
         if (move.base.effect) {
           const effect = move.base.effect as StatusEffect;
           const chanceRoll = Math.random();
@@ -345,16 +333,26 @@ export class BattleTurnHandler {
       }
     }
 
-    // check for fainted brotmons after all actions
-    for (let i = 0; i < 2; i++) {
-      const action = actions[i];
+    // process damage status effects (burn, poison, etc)
+    for (const action of actions) {
+      const { brotmon, logs: statusLogs } = this.statusEffectHandler.processDamageEffect(
+        action.brotmon,
+      );
 
+      action.brotmon = brotmon;
+      for (const log of statusLogs) {
+        logs.push(log);
+      }
+    }
+
+    // check for fainted brotmons after all actions
+    for (const [i, action] of actions.entries()) {
       // if Brotmon died
       if (action.brotmon.current_hp <= 0) {
         logs.push(`${action.brotmon.base.name} fainted!`);
 
         // try to auto-switch to another Brotmon
-        const { error: switchError } = await this.actionHandlers.autoSwitchBrotmon(
+        const { brotmon, error: switchError } = await this.actionHandlers.autoSwitchBrotmon(
           action.trainer.id,
         );
 
@@ -371,6 +369,8 @@ export class BattleTurnHandler {
         } else if (switchError) {
           return { result: null, error: switchError };
         }
+
+        action.brotmon = brotmon as TurnBrotmon;
       }
     }
 
