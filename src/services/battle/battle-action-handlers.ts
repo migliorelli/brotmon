@@ -128,7 +128,7 @@ export class BattleActionHandlers {
 
   async autoSwitchBrotmon(trainer_id: string) {
     if (!trainer_id) {
-      return { error: "Trainer ID is required" };
+      return { brotmon: null, error: "Trainer ID is required" };
     }
 
     try {
@@ -136,10 +136,11 @@ export class BattleActionHandlers {
         .from("trainer_brotmons")
         .select(
           `
-        id, current_hp, created_at,
-        trainer:trainers!trainer_id(id, username),
-        base:brotmons!brotmon_id(id, name)
-      `,
+          id, effects, current_hp,
+          base:brotmons!brotmon_id(
+            id, name, emoji, nature, hp, attack, defense, speed
+          )
+          `,
         )
         .eq("trainer_id", trainer_id)
         .gt("current_hp", 0)
@@ -151,35 +152,20 @@ export class BattleActionHandlers {
           trainer_id,
           error: brotmonsError.message,
         });
-        return { error: brotmonsError.message };
+        return { brotmon: null, error: brotmonsError.message };
       } else if (!brotmons || brotmons.length === 0) {
-        return { error: "No Brotmon alive" };
+        return { brotmon: null, error: "No Brotmon alive" };
       }
 
-      // update the active brotmon for the trainer's action
-      const { error: updateError } = await this.supabase
-        .from("battle_actions")
-        .update({
-          brotmon_id: brotmons[0].id,
-        })
-        .eq("trainer_id", trainer_id);
-
-      if (updateError) {
-        console.error(`[BattleActionHandlers] Error updating active brotmon:`, {
-          trainer_id,
-          brotmon_id: brotmons[0].id,
-          error: updateError.message,
-        });
-
-        return { error: updateError.message };
-      }
-
-      return { error: null };
+      return { brotmon: brotmons[0], error: null };
     } catch (err) {
       console.error(`[BattleActionHandlers] Exception in autoSwitchBrotmon:`, {
         error: err instanceof Error ? err.message : "Failed to auto switch brotmon",
       });
-      return { error: err instanceof Error ? err.message : "Failed to auto switch brotmon" };
+      return {
+        brotmon: null,
+        error: err instanceof Error ? err.message : "Failed to auto switch brotmon",
+      };
     }
   }
 
