@@ -196,7 +196,7 @@ export class StatusEffectHandler {
     };
   }
 
-  processStatusEffect(brotmon: TurnBrotmon) {
+  processDamageEffect(brotmon: TurnBrotmon) {
     const logs: string[] = [];
     const copy = { ...brotmon };
 
