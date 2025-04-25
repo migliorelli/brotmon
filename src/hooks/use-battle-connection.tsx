@@ -42,6 +42,15 @@ type UseBattleConnectionReturn = {
   sendMessage: (username: string, content: string) => Promise<void>;
 };
 
+const parseBattleingBrotmon = (brotmon?: BattleingBrotmon) => {
+  if (!brotmon) return null;
+
+  const copy = { ...brotmon };
+  copy.moves.sort((a, b) => a.base.name.localeCompare(b.base.name));
+
+  return copy;
+};
+
 export function useBattleConnection(
   battle_id: string,
   trainer_id: string,
@@ -143,15 +152,19 @@ export function useBattleConnection(
         const opponentAction = actions.find((a) => a.trainer_id !== trainer_id);
 
         const canMove = trainerAction?.action === null;
-        const trainerBrotmon = trainerAction?.brotmon_id;
-        const opponentBrotmon = opponentAction?.brotmon_id;
+
+        const tbId = trainerAction?.brotmon_id;
+        const tBrotmon = trainer?.brotmons.find((b) => b.id === tbId);
+
+        const obId = opponentAction?.brotmon_id;
+        const oBrotmon = opponent?.brotmons.find((b) => b.id === obId);
 
         dispatch({ type: BattleActionType.SET_CAN_MOVE, payload: canMove });
         dispatch({
           type: BattleActionType.SET_BATTLEING_BROTMONS,
           payload: {
-            trainer: trainer?.brotmons.find((b) => b.id === trainerBrotmon) || null,
-            opponent: opponent?.brotmons.find((b) => b.id === opponentBrotmon) || null,
+            trainer: parseBattleingBrotmon(tBrotmon),
+            opponent: parseBattleingBrotmon(oBrotmon),
           },
         });
       }
@@ -263,8 +276,8 @@ export function useBattleConnection(
           dispatch({
             type: BattleActionType.SET_BATTLEING_BROTMONS,
             payload: {
-              trainer: trainerAction?.brotmon || null,
-              opponent: opponentAction?.brotmon || null,
+              trainer: parseBattleingBrotmon(trainerAction?.brotmon),
+              opponent: parseBattleingBrotmon(opponentAction?.brotmon),
             },
           });
         } catch (err) {
